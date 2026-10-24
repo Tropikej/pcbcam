@@ -32,10 +32,10 @@ drilling:
   tools: [drill_0.3, drill_0.4, drill_0.5, drill_0.6, drill_0.7, drill_0.8, drill_0.9, drill_1.0, drill_1.1, drill_1.2]
   depth_mm: 1.8
   match_tolerance_mm: 0.02
-  milldrill_tool: endmill_1.0   # the four M3 (3.2 mm) mounting holes
+  milldrill_tool: endmill_2.0   # the four M3 (3.2 mm) mounting holes
 
 outline:
-  tool: endmill_1.0
+  tool: endmill_2.0
   depth_mm: 1.6
   stepdown_mm: 0.4
   tabs: {count: 4, width_mm: 1.5, height_mm: 0.5}

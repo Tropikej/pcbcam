@@ -49,13 +49,12 @@ tools:
   drill_1.1: {type: drill, number: 18, diameter_mm: 1.1, rpm: 12000, plunge_mm_min: 60}
   drill_1.2: {type: drill, number: 19, diameter_mm: 1.2, rpm: 12000, plunge_mm_min: 60}
 
-  # PLACEHOLDER -- you didn't list one. The 3.2 mm mounting holes and the
   # board outline need a flat end mill / corn bit; put the one you own here.
-  endmill_1.0:
+  endmill_2.0:
     type: endmill
     number: 20
-    description: 1 mm corn bit (placeholder)
-    diameter_mm: 1.0
+    description: 2.0mm single flute carbide endmill
+    diameter_mm: 2.0
     rpm: 12000
     feed_mm_min: 200
     plunge_mm_min: 60
