@@ -1,65 +1,60 @@
-# Tool library for the calibration board.
+# Tool library: the cutters on the bench.
 #
 # Units are in the field names: mm, mm/min, rpm, degrees. `number` is the
-# M6 T<number> tool number; T0 is reserved for the probe.
+# M6 T<number> tool number shown at each tool change (the Z1 changes tools by
+# hand, so it is a label: keep it stuck on the bit's box). T0 is the probe.
 #
-# EVERY NUMBER BELOW IS A STARTING POINT, NOT A VALIDATED SETTING. Edit the
-# drill list to match the bits you actually own: the board has 0.6, 0.7, 0.8,
-# 1.0 and 1.2 mm holes, and pcbcam refuses holes it has no tool for.
+# Feeds and speeds are STARTING POINTS for FR4, not validated settings.
 
 tools:
-  vbit_30_0.1:
+  # Dreanique 3.175 mm shank, 20 deg included angle, 0.1 mm tip.
+  # Cut width = 0.1 + 2 x depth x tan(10 deg) = 0.1 + 0.353 x depth:
+  #   0.05 deep -> 0.118   0.08 deep -> 0.128   0.10 deep -> 0.135
+  vbit_20_0.1:
     type: vbit
     number: 1
-    description: 30 deg engraving bit, 0.1 mm tip
-    angle_deg: 30
+    description: Dreanique 3.175 20deg 0.1
+    angle_deg: 20
     tip_diameter_mm: 0.1
-    # After milling this board, measure the GAP ladder and add what you see:
+    # After the calibration cut, replace the formula with measured grooves
+    # (measure the GAP ladder under a loupe), e.g.:
     # calibration:
-    #   - {depth_mm: 0.08, width_mm: 0.16}
+    #   - {depth_mm: 0.05, width_mm: 0.13}
+    #   - {depth_mm: 0.10, width_mm: 0.16}
     rpm: 12000
-    feed_mm_min: 150
-    plunge_mm_min: 60
+    feed_mm_min: 120
+    plunge_mm_min: 30
 
-  drill_0.6:
-    type: drill
+  # Dreanique 3.175 mm shank, 20 deg, 0.2 mm tip: sturdier, for wide gaps.
+  #   0.05 deep -> 0.218   0.08 deep -> 0.228   0.10 deep -> 0.235
+  vbit_20_0.2:
+    type: vbit
     number: 2
-    diameter_mm: 0.6
+    description: Dreanique 3.175 20deg 0.2
+    angle_deg: 20
+    tip_diameter_mm: 0.2
     rpm: 12000
-    plunge_mm_min: 50
+    feed_mm_min: 200
+    plunge_mm_min: 40
 
-  drill_0.7:
-    type: drill
-    number: 3
-    diameter_mm: 0.7
-    rpm: 12000
-    plunge_mm_min: 50
+  # PCB drill set 0.3 - 1.2 mm. The small ones break easily: slow plunge.
+  drill_0.3: {type: drill, number: 10, diameter_mm: 0.3, rpm: 12000, plunge_mm_min: 20}
+  drill_0.4: {type: drill, number: 11, diameter_mm: 0.4, rpm: 12000, plunge_mm_min: 25}
+  drill_0.5: {type: drill, number: 12, diameter_mm: 0.5, rpm: 12000, plunge_mm_min: 30}
+  drill_0.6: {type: drill, number: 13, diameter_mm: 0.6, rpm: 12000, plunge_mm_min: 40}
+  drill_0.7: {type: drill, number: 14, diameter_mm: 0.7, rpm: 12000, plunge_mm_min: 40}
+  drill_0.8: {type: drill, number: 15, diameter_mm: 0.8, rpm: 12000, plunge_mm_min: 50}
+  drill_0.9: {type: drill, number: 16, diameter_mm: 0.9, rpm: 12000, plunge_mm_min: 50}
+  drill_1.0: {type: drill, number: 17, diameter_mm: 1.0, rpm: 12000, plunge_mm_min: 60}
+  drill_1.1: {type: drill, number: 18, diameter_mm: 1.1, rpm: 12000, plunge_mm_min: 60}
+  drill_1.2: {type: drill, number: 19, diameter_mm: 1.2, rpm: 12000, plunge_mm_min: 60}
 
-  drill_0.8:
-    type: drill
-    number: 4
-    diameter_mm: 0.8
-    rpm: 12000
-    plunge_mm_min: 60
-
-  drill_1.0:
-    type: drill
-    number: 5
-    diameter_mm: 1.0
-    rpm: 12000
-    plunge_mm_min: 60
-
-  drill_1.2:
-    type: drill
-    number: 6
-    diameter_mm: 1.2
-    rpm: 12000
-    plunge_mm_min: 60
-
+  # PLACEHOLDER -- you didn't list one. The 3.2 mm mounting holes and the
+  # board outline need a flat end mill / corn bit; put the one you own here.
   endmill_1.0:
     type: endmill
-    number: 7
-    description: 1 mm 2-flute corn/end mill, M3 holes and outline
+    number: 20
+    description: 1 mm corn bit (placeholder)
     diameter_mm: 1.0
     rpm: 12000
     feed_mm_min: 200

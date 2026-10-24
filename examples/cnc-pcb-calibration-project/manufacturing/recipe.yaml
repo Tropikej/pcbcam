@@ -20,14 +20,16 @@ heights:
 
 isolation:
   side: front
-  tools: [vbit_30_0.1]
+  # One bit per calibration cut, so every groove on the board comes from it.
+  # Real boards can use both, widest first: [vbit_20_0.2, vbit_20_0.1]
+  tools: [vbit_20_0.1]
   depth_mm: 0.08
   # The GAP ladder and the .4/.20 - .5/.35 rows go below the V-bit width on
   # purpose: let pcb2gcode cut into that copper instead of failing.
   allow_contentions: true
 
 drilling:
-  tools: [drill_0.6, drill_0.7, drill_0.8, drill_1.0, drill_1.2]
+  tools: [drill_0.3, drill_0.4, drill_0.5, drill_0.6, drill_0.7, drill_0.8, drill_0.9, drill_1.0, drill_1.1, drill_1.2]
   depth_mm: 1.8
   match_tolerance_mm: 0.02
   milldrill_tool: endmill_1.0   # the four M3 (3.2 mm) mounting holes
