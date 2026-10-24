@@ -12,9 +12,14 @@
 # compensation until M370 -- Carvera Community firmware docs/commands.json and
 # config_z1.default (leveling-strategy.rectangular-grid).
 #
-# NOT verified on hardware yet: air cut first, then a shallow cut on scrap.
+# Checked on a Z1 with Makera Studio (2026-10-24), isolation jobs only:
+#   * .cnc files load and preview (.nc: no preview, no error)
+#   * T<n>M6 tool change + tool length measurement, S M3, G54, G4 P<s>
+#   * Studio's 5x5 auto-leveling applies to an imported pcbcam file
+#   * 0.08 mm deep isolation with a 20 deg / 0.2 mm V-bit at 60 / 10 mm/min
+# Still unchecked: drilling, milled holes, outline with tabs, multi-tool files.
 name: Makera Z1
-verified: false
+verified: false  # true once drilling and outline have run too
 notes: >
   Auto-leveling via G32 is experimental: it is unconfirmed which tool the Z1 probes
   with and whether Makera Studio keeps the compensation for an imported file.
