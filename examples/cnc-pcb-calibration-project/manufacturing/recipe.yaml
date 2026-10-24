@@ -22,8 +22,8 @@ isolation:
   side: front
   # One bit per calibration cut, so every groove on the board comes from it.
   # Real boards can use both, widest first: [vbit_20_0.2, vbit_20_0.1]
-  tools: [vbit_20_0.1]
-  depth_mm: 0.08
+  tools: [vbit_20_0.2]
+  depth_mm: 0.10
   # The GAP ladder and the .4/.20 - .5/.35 rows go below the V-bit width on
   # purpose: let pcb2gcode cut into that copper instead of failing.
   allow_contentions: true

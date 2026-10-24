@@ -218,6 +218,7 @@ class Builder:
         fp = self.footprint(f"witness {tag}")
         for i in range(6):
             self.smd(fp, str(i + 1), x + i * 0.5, y, 0.25, 1.0, f"CAL_WIT_{tag}_{i + 1}")
+        self.rule_area(x - 0.6, y - 0.9, x + 3.1, y + 0.9)  # a test pattern too
 
     def f_marker(self, x: float, y: float) -> None:
         """An 'F' plus an arrow: reads wrong if X or Y is mirrored or rotated."""
@@ -348,9 +349,10 @@ def main(path: str) -> None:
                         "BL": (X0 + 16.0, Y0 + H - 2.0), "BR": (X0 + W - 13.5, Y0 + H - 2.0)}.items():
         b.witness(x, y, tag)
 
-    # Exempt the sub-limit patterns (ladder, widths, fine rows) from the process rules
+    # Exempt the test patterns that probe the limits (ladder, widths, fine rows,
+    # QFN/TSSOP, whose gaps depend on the bit used) from the process rules
     b.rule_area(L - 1.0, Y0 + 11.0, X0 + 42.5, Y0 + H - 3.0)
-    b.rule_area(Rc - 1.0, Y0 + 11.0, X0 + W - 1.0, Y0 + 33.5)
+    b.rule_area(Rc - 1.0, Y0 + 11.0, X0 + W - 1.0, Y0 + 43.5)
 
     board.BuildConnectivity()
     p.SaveBoard(path, board)

@@ -15,6 +15,7 @@
 ### Changed
 
 -   Makera Z1 2-layer stackup applied (`--stackup makera_z1_2l`), board 85 x 58 mm
+-   QFN/TSSOP area and the four corner witnesses inside `pcbcam_calibration` rule areas (their gaps depend on the bit)
 
 ### Removed
 

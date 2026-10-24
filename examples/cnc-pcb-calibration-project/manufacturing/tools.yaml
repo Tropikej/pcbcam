@@ -21,9 +21,11 @@ tools:
     # calibration:
     #   - {depth_mm: 0.05, width_mm: 0.13}
     #   - {depth_mm: 0.10, width_mm: 0.16}
+    # 2026-10-24: tip broke a few seconds into the first cut at 120 / 30 mm/min
+    # (tool length 0.964 -> 0.777 mm). Retry slower, after checking runout.
     rpm: 12000
-    feed_mm_min: 120
-    plunge_mm_min: 30
+    feed_mm_min: 60
+    plunge_mm_min: 15
 
   # Dreanique 3.175 mm shank, 20 deg, 0.2 mm tip: sturdier, for wide gaps.
   #   0.05 deep -> 0.218   0.08 deep -> 0.228   0.10 deep -> 0.235
@@ -34,8 +36,8 @@ tools:
     angle_deg: 20
     tip_diameter_mm: 0.2
     rpm: 12000
-    feed_mm_min: 200
-    plunge_mm_min: 40
+    feed_mm_min: 100  # cautious first run; raise once it cuts cleanly
+    plunge_mm_min: 20
 
   # PCB drill set 0.3 - 1.2 mm. The small ones break easily: slow plunge.
   drill_0.3: {type: drill, number: 10, diameter_mm: 0.3, rpm: 12000, plunge_mm_min: 20}
