@@ -1,0 +1,51 @@
+# Calibration board: 85 x 58 mm, single-sided (F.Cu), centred on a 100 x 70 blank.
+# EVERY NUMBER BELOW IS A STARTING POINT, NOT A VALIDATED SETTING.
+
+machine: makera_z1
+tools: tools.yaml
+
+stock:                      # Makera FR4 blank (template profile makera_z1_2l)
+  size_x_mm: 100
+  size_y_mm: 70
+  thickness_mm: 1.5
+  copper_thickness_mm: 0.035
+
+placement:                  # board centred on the blank
+  margin_x_mm: 7.5
+  margin_y_mm: 6
+
+heights:
+  safe_mm: 2
+  tool_change_mm: 15
+
+isolation:
+  side: front
+  tools: [vbit_30_0.1]
+  depth_mm: 0.08
+  # The GAP ladder and the .4/.20 - .5/.35 rows go below the V-bit width on
+  # purpose: let pcb2gcode cut into that copper instead of failing.
+  allow_contentions: true
+
+drilling:
+  tools: [drill_0.6, drill_0.7, drill_0.8, drill_1.0, drill_1.2]
+  depth_mm: 1.8
+  match_tolerance_mm: 0.02
+  milldrill_tool: endmill_1.0   # the four M3 (3.2 mm) mounting holes
+
+outline:
+  tool: endmill_1.0
+  depth_mm: 1.6
+  stepdown_mm: 0.4
+  tabs: {count: 4, width_mm: 1.5, height_mm: 0.5}
+
+checks:                     # pcbcam_calibration rule areas are exempt
+  clearance_margin_mm: 0.02
+  min_track_width_mm: 0.2
+  min_annular_ring_mm: 0.25
+  min_hole_to_hole_mm: 0.3
+
+probing:                    # experimental: G32 height map before isolation
+  enabled: false
+  points_x: 5
+  points_y: 5
+  probe_height_mm: 2

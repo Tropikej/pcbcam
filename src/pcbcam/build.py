@@ -91,6 +91,10 @@ def run(
     result = Result(out)
     if not p.machine.verified:
         result.warnings.append(f"machine profile '{p.machine.name}' is not verified on hardware")
+    if recipe.isolation.allow_contentions:
+        result.warnings.append(
+            "isolation.allow_contentions is on: where the V-bit doesn't fit it WILL cut into "
+            "copper (calibration boards only); see preview/*.svg")
 
     # 1. Export from KiCad.
     cli = kicad.find_cli()

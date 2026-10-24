@@ -1,0 +1,74 @@
+# KiBot output for photo-realistic 3D renders in PNG format using Blender
+# and pcb2blender. Selected with RENDER_ENGINE: blender
+# https://kibot.readthedocs.io/en/master/configuration/outputs/blender_export.html
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: blender_export
+  category: '@DIR@'
+  dir: '@DIR@'
+  options:
+    # Name of the output generating the PCB3D file (kibot_out_pcb3d.yaml)
+    pcb3d: '@PCB3D_OUTPUT@'
+    render_options:
+      auto_crop: true
+      transparent_background: true
+      samples: @BLENDER_SAMPLES@
+      resolution_x: @RESOLUTION@
+      resolution_y: @RESOLUTION@
+    auto_camera_z_axis_factor: 1.1
+    point_of_view:
+      view: '@VIEW@'
+      rotate_x: @BLENDER_ROT_X@
+      rotate_y: @BLENDER_ROT_Y@
+      rotate_z: @BLENDER_ROT_Z@
+    light:
+      - name: key_light
+        type: AREA
+        energy: 2
+        pos_x: -size*3.33
+        pos_y: size*3.33
+        pos_z: size*5
+      - name: top_light
+        type: AREA
+        energy: 1
+        pos_x: 0
+        pos_y: 0
+        pos_z: size*12
+      - name: sun
+        type: SUN
+        energy: 2
+        pos_x: 0
+        pos_y: size/2
+        pos_z: size*20
+      - name: fill_light
+        type: AREA
+        energy: 0.5
+        pos_x: size
+        pos_y: -size
+        pos_z: size
+    outputs:
+      - type: render
+        output: '%f-@SUFFIX@%I%v.%x'
+
+...
+definitions:
+  NAME: png_3d_blender
+  COMMENT: Blender PCB render in PNG format
+  DIR: Images
+  SUFFIX: ""
+  VIEW: top
+  BLENDER_ROT_X: 0
+  BLENDER_ROT_Y: 0
+  BLENDER_ROT_Z: 0
+  # Unused, accepted to share the definitions with the KiCad engine
+  KICAD_ROT_X: 0
+  KICAD_ROT_Y: 0
+  RAYTRACING: false
+  RESOLUTION: 2000
+  BLENDER_SAMPLES: 50
+  PCB3D_OUTPUT: pcb3d_blender

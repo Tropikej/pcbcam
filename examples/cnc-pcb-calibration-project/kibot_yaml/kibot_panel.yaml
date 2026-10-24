@@ -1,0 +1,42 @@
+# KiBot configuration for the panel PCB made by the `panel` output
+# (kibot_out_panelize_*.yaml): Gerbers and drill of the panel (the preview
+# PNG is made by the `panel` output).
+# Run by kibot_launch.sh when `panel: true` in kibot_settings.yaml:
+#   kibot -c kibot_yaml/kibot_panel.yaml -b Manufacturing/Panel/<name>-panel.kicad_pcb
+
+kibot:
+  version: 1
+
+import:
+  - file: kibot_out_gerber.yaml
+    definitions:
+      NAME: panel_gerbers
+      COMMENT: Panel Gerbers
+      DIR: @PANEL_DIR@/Gerbers
+      PLOT_REFS: true
+
+  - file: kibot_out_excellon_drill.yaml
+    definitions:
+      NAME: panel_drill
+      COMMENT: Panel drill in Excellon format
+      DIR: @PANEL_DIR@/Gerbers
+
+outputs:
+  # Upload this ZIP as the PCB (panel by customer)
+  - name: panel_zip
+    comment: Panel Gerbers and drill in a ZIP
+    type: compress
+    category: '@PANEL_DIR@'
+    dir: '@PANEL_DIR@'
+    options:
+      output: '%f-GERBERS.%x'
+      move_files: false
+      files:
+        - from_output: panel_gerbers
+          dest: '/'
+        - from_output: panel_drill
+          dest: '/'
+
+...
+definitions:
+  PANEL_DIR: Manufacturing/Panel

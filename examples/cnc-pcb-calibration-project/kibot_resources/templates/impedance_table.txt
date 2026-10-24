@@ -1,0 +1,4 @@
+Transmission Line, Impedance [ohms], Tolerance, Layer, Trace Width [mm], Gap [mm], Gap to GND [mm], Ref. Layers
+Milled Grounded Coplanar (approx.), 50, approx. Â±10 %, L1 / L2, 1.48, -, 0.3, L2 / L1
+Milled Grounded Coplanar Diff. Pair (approx.), 90, approx. Â±10 %, L1 / L2, 0.97, 0.3, 0.3, L2 / L1
+Milled Grounded Coplanar Diff. Pair (approx.), 100, approx. Â±10 %, L1 / L2, 0.7, 0.3, 0.3, L2 / L1

@@ -118,6 +118,9 @@ class Isolation(_Strict):
     depth_mm: Positive
     isolation_width_mm: Positive | None = None
     overlap_percent: float = Field(default=50, ge=0, lt=100)
+    # Calibration boards only: let pcb2gcode cut into copper where the last tool
+    # doesn't fit (its "contentions" warning) instead of failing the build.
+    allow_contentions: bool = False
 
 
 class Drilling(_Strict):

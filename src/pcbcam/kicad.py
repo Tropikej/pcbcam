@@ -14,6 +14,7 @@ from .tooling import Resolved
 from .config import Recipe
 
 RULE_PREFIX = "pcbcam"
+CALIBRATION_AREA = "pcbcam_calibration"  # rule area name exempting test patterns
 
 
 class KiCadError(Exception):
@@ -110,6 +111,13 @@ def machine_rules(recipe: Recipe, resolved: Resolved) -> str:
         f"  (constraint hole_to_hole (min {c.min_hole_to_hole_mm:.4f}mm)))",
         f'(rule "{RULE_PREFIX}_edge_gap"\n'
         f"  (constraint edge_clearance (min {gap:.4f}mm)))",
+        # Last = highest priority. Test patterns that probe the limits on
+        # purpose live in rule areas with this name; only real layout errors
+        # (overlaps, sub-0.09 mm features) are still reported there.
+        f'(rule "{RULE_PREFIX}_calibration_area"\n'
+        f"  (condition \"A.intersectsArea('{CALIBRATION_AREA}') || B.intersectsArea('{CALIBRATION_AREA}')\")\n"
+        "  (constraint clearance (min 0.09mm))\n"
+        "  (constraint track_width (min 0.09mm)))",
     ]
     return "\n\n".join(rules) + "\n"
 

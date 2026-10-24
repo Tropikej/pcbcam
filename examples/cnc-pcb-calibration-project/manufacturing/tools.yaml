@@ -1,0 +1,66 @@
+# Tool library for the calibration board.
+#
+# Units are in the field names: mm, mm/min, rpm, degrees. `number` is the
+# M6 T<number> tool number; T0 is reserved for the probe.
+#
+# EVERY NUMBER BELOW IS A STARTING POINT, NOT A VALIDATED SETTING. Edit the
+# drill list to match the bits you actually own: the board has 0.6, 0.7, 0.8,
+# 1.0 and 1.2 mm holes, and pcbcam refuses holes it has no tool for.
+
+tools:
+  vbit_30_0.1:
+    type: vbit
+    number: 1
+    description: 30 deg engraving bit, 0.1 mm tip
+    angle_deg: 30
+    tip_diameter_mm: 0.1
+    # After milling this board, measure the GAP ladder and add what you see:
+    # calibration:
+    #   - {depth_mm: 0.08, width_mm: 0.16}
+    rpm: 12000
+    feed_mm_min: 150
+    plunge_mm_min: 60
+
+  drill_0.6:
+    type: drill
+    number: 2
+    diameter_mm: 0.6
+    rpm: 12000
+    plunge_mm_min: 50
+
+  drill_0.7:
+    type: drill
+    number: 3
+    diameter_mm: 0.7
+    rpm: 12000
+    plunge_mm_min: 50
+
+  drill_0.8:
+    type: drill
+    number: 4
+    diameter_mm: 0.8
+    rpm: 12000
+    plunge_mm_min: 60
+
+  drill_1.0:
+    type: drill
+    number: 5
+    diameter_mm: 1.0
+    rpm: 12000
+    plunge_mm_min: 60
+
+  drill_1.2:
+    type: drill
+    number: 6
+    diameter_mm: 1.2
+    rpm: 12000
+    plunge_mm_min: 60
+
+  endmill_1.0:
+    type: endmill
+    number: 7
+    description: 1 mm 2-flute corn/end mill, M3 holes and outline
+    diameter_mm: 1.0
+    rpm: 12000
+    feed_mm_min: 200
+    plunge_mm_min: 60

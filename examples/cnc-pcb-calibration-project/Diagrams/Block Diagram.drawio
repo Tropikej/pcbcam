@@ -1,0 +1,103 @@
+<mxfile host="drawio" version="24.7.17">
+  <diagram id="block-diagram" name="Block Diagram">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="870" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="pwr" value="Power" style="swimlane;rounded=1;arcSize=6;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=16;startSize=32;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="360" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="vin" value="&lt;b&gt;Input&lt;/b&gt;&lt;br&gt;+??V" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="pwr">
+          <mxGeometry x="20" y="60" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="reg1" value="&lt;b&gt;Regulator 1&lt;/b&gt;&lt;br&gt;Block description" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="pwr">
+          <mxGeometry x="200" y="60" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="reg2" value="&lt;b&gt;Regulator 2&lt;/b&gt;&lt;br&gt;Block description" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="pwr">
+          <mxGeometry x="200" y="160" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="prot" value="Protection&lt;br&gt;(fuse, ESD, reverse)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="pwr">
+          <mxGeometry x="20" y="160" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pwrnote" value="Page #" style="text;html=1;fontSize=12;fontStyle=2;align=left;" vertex="1" parent="pwr">
+          <mxGeometry x="20" y="270" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ep1" value="" style="endArrow=classic;html=1;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="pwr" source="vin" target="reg1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ep2" value="" style="endArrow=classic;html=1;strokeColor=#b85450;strokeWidth=2;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="pwr" source="vin" target="reg2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ep3" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#d6b656;" edge="1" parent="pwr" source="vin" target="prot">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="secA" value="Section A" style="swimlane;rounded=1;arcSize=6;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=16;startSize=32;" vertex="1" parent="1">
+          <mxGeometry x="470" y="20" width="300" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="bA" value="Block A" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="secA">
+          <mxGeometry x="30" y="60" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bB" value="Block B" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="secA">
+          <mxGeometry x="30" y="145" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bC" value="Block C" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="secA">
+          <mxGeometry x="30" y="230" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bD" value="Block D" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" vertex="1" parent="secA">
+          <mxGeometry x="30" y="315" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="secB" value="Section B" style="swimlane;rounded=1;arcSize=6;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=16;startSize=32;" vertex="1" parent="1">
+          <mxGeometry x="880" y="20" width="260" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="bE" value="Block E" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="secB">
+          <mxGeometry x="30" y="60" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="bF" value="Block F" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=14;fontStyle=1;" vertex="1" parent="secB">
+          <mxGeometry x="30" y="230" width="200" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="secC" value="Section C" style="swimlane;rounded=1;arcSize=6;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=16;startSize=32;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="20" width="300" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="bG" value="Block G" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="secC">
+          <mxGeometry x="30" y="60" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bH" value="Block H" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="secC">
+          <mxGeometry x="30" y="145" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bI" value="Block I" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="secC">
+          <mxGeometry x="30" y="230" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bJ" value="Block J" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;fontStyle=1;" vertex="1" parent="secC">
+          <mxGeometry x="30" y="315" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="+3V3" style="endArrow=classic;html=1;strokeColor=#b85450;strokeWidth=2;fontSize=12;fontStyle=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="reg1" target="secA">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="Port name" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bA" target="bE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="Port name" style="endArrow=classic;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bC" target="bF">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="Port name" style="endArrow=classic;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bE" target="bG">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="Port name" style="endArrow=classic;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bE" target="bH">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="Port name" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bF" target="bI">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Port name" style="endArrow=classic;html=1;strokeColor=#82b366;strokeWidth=2;fontSize=12;fontStyle=2;" edge="1" parent="1" source="bF" target="bJ">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="specs" value="&lt;table style=&quot;width:100%;border-collapse:collapse;font-size:14px&quot;&gt;&lt;tr&gt;&lt;td colspan=&quot;2&quot; style=&quot;border-bottom:3px solid #000;padding:4px&quot;&gt;&lt;b&gt;Target specifications&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:4px&quot;&gt;&lt;b&gt;Input voltage&lt;/b&gt;&lt;/td&gt;&lt;td&gt;?? - ?? V&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:4px&quot;&gt;&lt;b&gt;Spec 2&lt;/b&gt;&lt;/td&gt;&lt;td&gt;??&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:4px&quot;&gt;&lt;b&gt;Spec 3&lt;/b&gt;&lt;/td&gt;&lt;td&gt;??&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding:4px;border-bottom:3px solid #000&quot;&gt;&lt;b&gt;Spec 4&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;border-bottom:3px solid #000&quot;&gt;??&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="text;html=1;whiteSpace=wrap;verticalAlign=top;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="500" width="300" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="how" value="&lt;b&gt;Edit this diagram in draw.io&lt;/b&gt;: Diagrams/Block Diagram.drawio&lt;br&gt;then import it in the sheet: &lt;i&gt;./run_kibot.sh --diagrams&lt;/i&gt;" style="shape=note;whiteSpace=wrap;html=1;size=16;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="600" width="420" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

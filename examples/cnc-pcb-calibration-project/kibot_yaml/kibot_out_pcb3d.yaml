@@ -1,0 +1,28 @@
+# KiBot output exporting the PCB to the PCB3D format (pcb2blender).
+# Shared by the Blender renders (RENDER_ENGINE: blender) so the board is
+# exported only once. Only generated when a Blender render needs it.
+# https://kibot.readthedocs.io/en/master/configuration/outputs/blender_export.html
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: blender_export
+  category: '@DIR@'
+  dir: '@DIR@'
+  run_by_default: false
+  options:
+    pcb3d:
+      download: true
+      download_lcsc: true
+      output: '%f%I%v.%x'
+    # No render here, just the PCB3D export
+    outputs: []
+
+...
+definitions:
+  NAME: pcb3d_blender
+  COMMENT: PCB 3D model in PCB3D (Blender) format
+  DIR: 3D

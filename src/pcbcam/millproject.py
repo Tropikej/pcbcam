@@ -53,6 +53,8 @@ def render(
     })
     if iso.isolation_width_mm:
         lines["isolation-width"] = f"{_fmt(iso.isolation_width_mm)}mm"
+    if iso.allow_contentions:
+        lines["ignore-warnings"] = "true"
 
     drilled = [a for a in holes if a.method == "drill"]
     milled = [a for a in holes if a.method == "milldrill"]

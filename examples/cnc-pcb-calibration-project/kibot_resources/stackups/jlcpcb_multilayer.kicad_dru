@@ -1,0 +1,95 @@
+(version 1)
+# JLCPCB custom design rules for KiCad 10
+# 4 and 6 layers (same capabilities), 1 oz outer / 0.5 oz inner copper.
+# Values stay within the JLCPCB standard capabilities, without extra cost.
+# https://jlcpcb.com/capabilities/pcb-capabilities
+# Installed by: ./run_kibot.sh --stackup jlcpcb_4l | jlcpcb_6l
+
+# ----------------------------------- Tracks ----------------------------------------------------------
+
+(rule "Track width and spacing"
+	(constraint track_width (min 0.09mm))
+	(constraint clearance (min 0.09mm))
+	(condition "A.Type == 'Track'"))
+
+# ----------------------------------- Vias ------------------------------------------------------------
+
+# No extra cost: 0.3 mm hole, or 0.2 mm hole with a diameter >= 0.45 mm
+(rule "Via hole and diameter"
+	(constraint hole_size (min 0.2mm))
+	(constraint via_diameter (min 0.45mm))
+	(condition "A.Type == 'Via'"))
+
+(rule "Via hole to hole"
+	(constraint hole_to_hole (min 0.2mm))
+	(condition "A.Type == 'Via' && B.Type == 'Via'"))
+
+(rule "Via to track"
+	(constraint hole_clearance (min 0.2mm))
+	(condition "A.Type == 'Via' && B.Type == 'Track'"))
+
+# ----------------------------------- Holes and pads --------------------------------------------------
+
+(rule "Plated hole size"
+	(constraint hole_size (min 0.2mm) (max 6.3mm))
+	(condition "A.Type == 'Pad' && A.isPlated()"))
+
+(rule "Plated hole annular ring"
+	(constraint annular_width (min 0.15mm))
+	(condition "A.Type == 'Pad' && A.isPlated()"))
+
+(rule "Non-plated hole size"
+	(constraint hole_size (min 0.5mm))
+	(condition "A.Type == 'Pad' && !A.isPlated()"))
+
+(rule "Plated slot width"
+	(constraint hole_size (min 0.5mm))
+	(condition "A.Type == 'Pad' && A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y"))
+
+(rule "Non-plated slot width"
+	(constraint hole_size (min 1.0mm))
+	(condition "A.Type == 'Pad' && !A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y"))
+
+(rule "Castellated hole size"
+	(constraint hole_size (min 0.5mm))
+	(condition "A.Type == 'Pad' && A.Fabrication_Property == 'Castellated pad'"))
+
+(rule "Pad hole to hole"
+	(constraint hole_to_hole (min 0.45mm))
+	(condition "A.Type == 'Pad' && B.Type == 'Pad'"))
+
+(rule "Plated hole to track"
+	(constraint hole_clearance (min 0.28mm))
+	(condition "A.Type == 'Pad' && A.isPlated() && B.Type == 'Track'"))
+
+(rule "Non-plated hole to copper"
+	(constraint hole_clearance (min 0.2mm))
+	(condition "A.Type == 'Pad' && !A.isPlated()"))
+
+# ----------------------------------- Board edge ------------------------------------------------------
+
+# JLCPCB minimum is 0.2 mm for routed edges (0.4 mm for V-cut)
+(rule "Copper to board edge"
+	(constraint edge_clearance (min 0.3mm)))
+
+# ----------------------------------- Silkscreen ------------------------------------------------------
+
+(rule "Silkscreen text"
+	(constraint text_thickness (min 0.15mm))
+	(constraint text_height (min 1.0mm))
+	(layer "?.Silkscreen"))
+
+(rule "Pad to silkscreen"
+	(constraint silk_clearance (min 0.15mm))
+	(layer outer)
+	(condition "A.Type == 'Pad' && (B.Type == 'Text' || B.Type == 'Graphic')"))
+
+# ----------------------------------- Courtyards ------------------------------------------------------
+
+(rule "Test point courtyard exclusion"
+	(constraint courtyard_clearance (min -1mm))
+	(condition "A.Reference == 'TP*'"))
+
+(rule "Fiducial courtyard exclusion"
+	(constraint courtyard_clearance (min -1mm))
+	(condition "A.Reference == 'FM*'"))

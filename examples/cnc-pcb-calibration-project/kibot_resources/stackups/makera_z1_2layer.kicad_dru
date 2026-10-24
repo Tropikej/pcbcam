@@ -1,0 +1,77 @@
+(version 1)
+# CNC isolation milling (Makera Z1 / Carvera) custom design rules for KiCad 10
+# Double-sided FR4 1.5 mm blanks, 1 oz copper, no plated holes, no soldermask.
+# Hard limits of the process: the net classes of the profile use larger values.
+# Sources: Makera community knowledge base (Discord #all-things-pcb, #z1-general),
+# https://github.com/brunostjohn/CarveraPCBGuide
+# Installed by: ./run_kibot.sh --stackup makera_z1_2l
+
+# ----------------------------------- Isolation -------------------------------------------------------
+
+# The isolation groove is the limit: 0.2 mm needs a 0.1 mm 30 deg V-bit, a flat
+# board and mesh auto-leveling. It applies to all copper (pads of fine pitch
+# footprints included), not only tracks.
+(rule "Isolation clearance"
+	(constraint clearance (min 0.2mm)))
+
+# Thinner tracks are eaten by the V-bit (the groove widens with the cut depth)
+(rule "Track width"
+	(constraint track_width (min 0.25mm))
+	(condition "A.Type == 'Track'"))
+
+# Thin zone spokes/necks are cut through or lifted
+(rule "Zone thermal spokes"
+	(constraint thermal_spoke_width (min 0.3mm)))
+
+# ----------------------------------- Vias ------------------------------------------------------------
+
+# Vias are rivets (0.6 / 0.8 / 1.0 mm) or wires: 0.6 mm hole minimum, and a
+# ring wide enough for the rivet flange and the flip misalignment
+(rule "Via hole and diameter"
+	(constraint hole_size (min 0.6mm))
+	(constraint via_diameter (min 1.2mm))
+	(constraint annular_width (min 0.3mm))
+	(condition "A.Type == 'Via'"))
+
+# ----------------------------------- Holes and pads --------------------------------------------------
+
+# Smallest drill bit of the usual kits. Holes are not plated.
+(rule "Hole size"
+	(constraint hole_size (min 0.6mm))
+	(condition "A.Type == 'Pad'"))
+
+# Copper left around the hole after drilling and flipping the board
+(rule "Pad annular ring"
+	(constraint annular_width (min 0.25mm))
+	(condition "A.Type == 'Pad' && A.isPlated()"))
+
+# Slots and castellations are milled with a 0.8 mm corn bit
+(rule "Slot width"
+	(constraint hole_size (min 0.8mm))
+	(condition "A.Type == 'Pad' && A.Hole_Size_X != A.Hole_Size_Y"))
+
+(rule "Castellated hole size"
+	(constraint hole_size (min 0.8mm))
+	(condition "A.Type == 'Pad' && A.Fabrication_Property == 'Castellated pad'"))
+
+(rule "Hole to hole"
+	(constraint hole_to_hole (min 0.5mm)))
+
+(rule "Hole to copper"
+	(constraint hole_clearance (min 0.3mm)))
+
+# ----------------------------------- Board edge ------------------------------------------------------
+
+# Outline cut with a corn bit after the flip: keep copper away from it
+(rule "Copper to board edge"
+	(constraint edge_clearance (min 0.5mm)))
+
+# ----------------------------------- Courtyards ------------------------------------------------------
+
+(rule "Test point courtyard exclusion"
+	(constraint courtyard_clearance (min -1mm))
+	(condition "A.Reference == 'TP*'"))
+
+(rule "Fiducial courtyard exclusion"
+	(constraint courtyard_clearance (min -1mm))
+	(condition "A.Reference == 'FM*'"))

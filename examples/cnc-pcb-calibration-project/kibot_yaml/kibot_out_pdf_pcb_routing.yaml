@@ -1,0 +1,99 @@
+# KiBot output for printing the PCB routing in PDF format
+# First page: all copper layers stacked, then one page per copper layer with
+# the board outline and the component outlines (Fab) as a reference.
+# https://kibot.readthedocs.io/en/master/configuration/outputs/pcb_print.html
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: pcb_print
+  category: '@DIR@'
+  dir: '@DIR@'
+  options:
+    output: '%f-routing%I%v.%x'
+    format: 'PDF'
+    title: 'PCB Routing'
+    color_theme: '@COLOR_THEME@'
+    dpi: 1200
+    realistic_solder_mask: false
+    colored_pads: true
+    colored_vias: true
+    dnf_filter: _kibom_dnf_Config
+    frame_plot_mechanism: 'internal'
+    sheet_reference_layout: '@SHEET_WKS@'
+    # Keep the board away from the title block when autoscaling (SCALING: 0)
+    autoscale_margin_x: 20
+    autoscale_margin_y: 55
+    pages:
+      - scaling: @SCALING@
+        title: 'PCB Routing'
+        sheet: 'All Copper Layers'
+        layer_var: 'All Copper Layers'
+        sheet_reference_color: '#000000'
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: Edge.Cuts
+            color: '#000000'
+          - copper
+
+      - scaling: @SCALING@
+        title: 'PCB Routing'
+        sheet: '%ln'
+        layer_var: '%ln'
+        sheet_reference_color: '#000000'
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        repeat_for_layer: 'F.Cu'
+        repeat_layers: 'copper'
+        layers:
+          - layer: Edge.Cuts
+            color: '#000000'
+          - layer: F.Fab
+            color: '#B0B0B0'
+            plot_footprint_values: false
+          - layer: F.Cu
+
+      - scaling: @SCALING@
+        title: 'PCB Routing'
+        sheet: 'Top Silkscreen'
+        layer_var: 'Top Silkscreen'
+        sheet_reference_color: '#000000'
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: Edge.Cuts
+            color: '#000000'
+          - layer: F.Cu
+            color: '#E0E0E0'
+          - layer: F.Silkscreen
+            color: '#000000'
+
+      - scaling: @SCALING@
+        title: 'PCB Routing'
+        sheet: 'Bottom Silkscreen'
+        layer_var: 'Bottom Silkscreen'
+        sheet_reference_color: '#000000'
+        mirror: true
+        mirror_pcb_text: false
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: Edge.Cuts
+            color: '#000000'
+          - layer: B.Cu
+            color: '#E0E0E0'
+          - layer: B.Silkscreen
+            color: '#000000'
+
+...
+definitions:
+  NAME: pdf_pcb_routing
+  COMMENT: PCB routing in PDF format
+  DIR: PCB
+  COLOR_THEME: Altium_Theme
+  SHEET_WKS: ${KIPRJMOD}/Templates/Template_PCB_GIT_A4.kicad_wks
+  SCALING: 0  # 0 = fit the page

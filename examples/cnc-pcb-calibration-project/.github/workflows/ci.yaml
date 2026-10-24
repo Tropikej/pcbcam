@@ -1,0 +1,343 @@
+name: KiBot
+
+# Generates the project outputs with KiBot. The job runs ./run_kibot.sh, the
+# same command as a local run: the docker image of kibot_settings.yaml
+# executes kibot_launch.sh on the checked out project.
+#
+# - push on main/dev    : outputs for the variant set in kibot_settings.yaml,
+#                         published according to ci_outputs (branch/commit/none)
+# - pull request        : checks (pr_variant, ERC/DRC), summary posted on the
+#                         pull request, nothing committed
+# - push of a tag x.y.z : RELEASED variant, CHANGELOG.md update, outputs
+#                         committed on main and GitHub release with assets
+# - manual run (Actions tab) : variant and render engine can be overridden
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Variant (settings = the one in kibot_settings.yaml)'
+        type: choice
+        options: [settings, DRAFT, PRELIMINARY, CHECKED, RELEASED]
+        default: settings
+      render_engine:
+        description: '3D render engine (settings = ci_render_engine in kibot_settings.yaml)'
+        type: choice
+        options: [settings, kicad, blender]
+        default: settings
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+' # Semantic versioning tags
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Never run two generations for the same branch at the same time
+concurrency:
+  group: kibot-${{ github.ref }}
+  # A new push on a pull request cancels the previous check
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  KIBOT_LOGS: kibot_logs
+  KIBOT_3D_CACHE_DIR: ${{ github.workspace }}/../kibot_3d_models
+
+jobs:
+  generate_outputs:
+    name: Generate outputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Full history for KiRI and the git text variables
+
+      # Shared libraries as git submodules. A private library repository needs a
+      # token with read access to it in the KICAD_LIBS_TOKEN secret (the
+      # default GITHUB_TOKEN only reads this repository). The token is only
+      # used here, the outputs are pushed with the GITHUB_TOKEN.
+      - name: Checkout libraries (git submodules)
+        env:
+          LIBS_TOKEN: ${{ secrets.KICAD_LIBS_TOKEN || github.token }}
+        run: |
+          if [[ ! -f .gitmodules ]]; then
+            ./run_kibot.sh --check-libs
+            exit
+          fi
+          git -c "http.https://github.com/.extraheader=" \
+              -c "url.https://x-access-token:${LIBS_TOKEN}@github.com/.insteadOf=https://github.com/" \
+              -c "url.https://x-access-token:${LIBS_TOKEN}@github.com/.insteadOf=git@github.com:" \
+              submodule update --init --recursive
+          # The libraries declared in kibot_settings.yaml must be there
+          ./run_kibot.sh --check-libs
+
+      # docs/CONFIG_REFERENCE.md is generated from the comments of the settings
+      # and definitions: fail if a new one has no comment or if it is outdated
+      - name: Check the configuration reference
+        run: python3 kibot_resources/scripts/gen_config_reference.py --check
+
+      # A diagram (Diagrams/*.drawio...) changed but its sheet was not updated
+      # in the commit: run_kibot.sh imports it before the generation
+      # (auto_diagrams), so the documents are right. Warn to commit the sheet.
+      - name: Check the diagrams
+        run: |
+          boards="$(sed -n 's/^boards:[[:space:]]*\([^#]*\).*/\1/p' kibot_settings.yaml | head -n1 | tr ',' ' ')"
+          for b in ${boards:-.}; do
+            if ! python3 kibot_resources/scripts/import_diagrams.py --check --project "$b"; then
+              echo "::warning::Diagrams of $b changed but their sheet is not updated in this commit: imported for this run. Run ./run_kibot.sh --diagrams locally and commit the sheet."
+            fi
+          done
+
+      - name: Read settings
+        id: settings
+        run: |
+          get_setting() {
+            sed -n "s/^$1:[[:space:]]*\([^#]*\).*/\1/p" kibot_settings.yaml | head -n1 | sed 's/[[:space:]]*$//; s/^["'\'']//; s/["'\'']$//'
+          }
+          variant="$(get_setting variant)"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            variant="$(get_setting pr_variant)"
+            variant="${variant:-CHECKED}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "Tag pushed: forcing the RELEASED variant"
+            variant=RELEASED
+          elif [[ -n "${{ inputs.variant }}" && "${{ inputs.variant }}" != "settings" ]]; then
+            variant="${{ inputs.variant }}"
+          fi
+          render_engine="$(get_setting ci_render_engine)"
+          if [[ -n "${{ inputs.render_engine }}" && "${{ inputs.render_engine }}" != "settings" ]]; then
+            render_engine="${{ inputs.render_engine }}"
+          fi
+          {
+            echo "variant=${variant:-DRAFT}"
+            echo "render_engine=${render_engine:-kicad}"
+            ci_outputs="$(get_setting ci_outputs)"
+            if [[ -z "$ci_outputs" ]]; then
+              # Old setting name
+              [[ "$(get_setting commit_outputs)" == "false" ]] && ci_outputs=none || ci_outputs=commit
+            fi
+            echo "ci_outputs=${ci_outputs}"
+            if [[ "${{ github.ref_type }}" == "tag" ]]; then
+              echo "revision=${{ github.ref_name }}"
+            else
+              echo "revision=$(python3 kibot_resources/scripts/get_changelog_version.py -f CHANGELOG.md)"
+            fi
+            echo "image=$(get_setting docker_image)"
+            echo "boards=$(get_setting boards | tr ',' ' ')"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Configure git
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      # Release: rename the [Unreleased] section of CHANGELOG.md to the tag,
+      # before the generation so the documents show the right revision history
+      - name: Update CHANGELOG
+        if: github.ref_type == 'tag'
+        uses: thomaseizinger/keep-a-changelog-new-release@v3
+        with:
+          tag: ${{ github.ref_name }}
+
+      - name: Extract release notes
+        if: github.ref_type == 'tag'
+        run: |
+          python3 kibot_resources/scripts/get_changelog.py -f CHANGELOG.md --markdown \
+            --version "${{ github.ref_name }}" > "$RUNNER_TEMP/release_notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release_notes.md"; then
+            echo "_No entry in CHANGELOG.md for this version._" > "$RUNNER_TEMP/release_notes.md"
+          fi
+          cat "$RUNNER_TEMP/release_notes.md"
+
+      - name: Cache 3D models
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.KIBOT_3D_CACHE_DIR }}
+          key: kibot-3d-models-${{ github.run_id }}
+          restore-keys: kibot-3d-models-
+
+      - name: Pull KiBot image
+        run: docker pull "${{ steps.settings.outputs.image }}"
+
+      - name: Run KiBot
+        id: kibot
+        env:
+          VARIANT: ${{ steps.settings.outputs.variant }}
+          RENDER_ENGINE: ${{ steps.settings.outputs.render_engine }}
+        run: |
+          args=(-v "$VARIANT" --log-dir "$KIBOT_LOGS")
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            args+=(--version "${{ github.ref_name }}")
+          fi
+          if [[ -n "$RENDER_ENGINE" ]]; then
+            args+=(-r "$RENDER_ENGINE")
+          fi
+          ./run_kibot.sh "${args[@]}"
+
+      # Job summary, also posted on the pull requests
+      - name: Summary
+        if: always() && steps.settings.outcome == 'success'
+        env:
+          VARIANT: ${{ steps.settings.outputs.variant }}
+          STATUS: ${{ steps.kibot.outcome }}
+          REVISION: ${{ steps.settings.outputs.revision }}
+          ENGINE: ${{ steps.settings.outputs.render_engine }}
+          CI_OUTPUTS: ${{ steps.settings.outputs.ci_outputs }}
+          BOARDS: ${{ steps.settings.outputs.boards }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          link_base=""
+          if [[ "${{ github.event_name }}" != "pull_request" && "${{ github.ref_type }}" == "branch" ]]; then
+            case "$CI_OUTPUTS" in
+              branch) link_base="${{ github.server_url }}/${{ github.repository }}/blob/kibot-outputs/${{ github.ref_name }}" ;;
+              commit) link_base="${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}" ;;
+            esac
+          fi
+          # Boards and assembly variants (logs in $KIBOT_LOGS[/<board>][/<variant>])
+          appends=(--append "$KIBOT_LOGS/manufacturing_checks.md")
+          while read -r f; do
+            appends+=(--append "$f")
+          done < <(find "$KIBOT_LOGS" -mindepth 2 -name manufacturing_checks.md | sort)
+          python3 kibot_resources/scripts/ci_summary.py --variant "$VARIANT" --status "$STATUS" \
+            --revision "$REVISION" --engine "$ENGINE" --link-base "$link_base" \
+            --artifacts-url "$RUN_URL" --boards "$BOARDS" "${appends[@]}" -o "$RUNNER_TEMP/summary.md"
+          cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment the pull request
+        if: always() && github.event_name == 'pull_request' && steps.settings.outcome == 'success'
+        continue-on-error: true  # i.e. read-only token for pull requests from forks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # Update the previous summary comment instead of adding a new one
+          comment_id=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '.[] | select(.body | startswith("<!-- kibot-summary -->")) | .id' | tail -n1)
+          if [[ -n "$comment_id" ]]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$comment_id" \
+              -F "body=@$RUNNER_TEMP/summary.md" > /dev/null
+          else
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/summary.md"
+          fi
+
+      - name: Store logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kibot_logs
+          path: ${{ env.KIBOT_LOGS }}
+
+      - name: Store outputs
+        if: steps.kibot.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: kibot_outputs_${{ steps.settings.outputs.variant }}
+          path: |
+            .
+            !.git
+            !${{ env.KIBOT_LOGS }}
+
+      # No "[skip ci]" in the commit messages: pushes made with the GITHUB_TOKEN
+      # don't trigger workflows anyway, and "[skip ci]" would also block the
+      # release when a tag is pushed on one of these commits.
+      # ci_outputs: branch -> single commit (project + outputs) force-pushed to
+      # kibot-outputs/<branch>: browsable, and no history growth
+      - name: Publish outputs (kibot-outputs branch)
+        if: github.event_name != 'pull_request' && github.ref_type == 'branch' && steps.settings.outputs.ci_outputs == 'branch'
+        env:
+          VARIANT: ${{ steps.settings.outputs.variant }}
+        run: |
+          rm -rf "$KIBOT_LOGS"
+          git add -A
+          commit=$(git commit-tree "$(git write-tree)" \
+            -m "KiBot outputs (${VARIANT}) of ${{ github.ref_name }} ${GITHUB_SHA::7}")
+          git push --force origin "$commit:refs/heads/kibot-outputs/${{ github.ref_name }}"
+          git reset -q
+          echo "Outputs: ${{ github.server_url }}/${{ github.repository }}/tree/kibot-outputs/${{ github.ref_name }}"
+
+      # ci_outputs: commit -> outputs committed on the branch itself
+      - name: Commit outputs (branch)
+        if: github.event_name != 'pull_request' && github.ref_type == 'branch' && steps.settings.outputs.ci_outputs == 'commit'
+        env:
+          VARIANT: ${{ steps.settings.outputs.variant }}
+        run: |
+          rm -rf "$KIBOT_LOGS"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes in the outputs"
+            exit 0
+          fi
+          git commit -m "Update outputs (${VARIANT})"
+          # Someone may have pushed during the generation: rebase, keeping
+          # the freshly generated outputs in case of conflict
+          for _ in 1 2 3; do
+            git pull --rebase -X theirs origin "${{ github.ref_name }}" && \
+              git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep 5
+          done
+          exit 1
+
+      - name: Commit outputs and CHANGELOG (release)
+        if: github.ref_type == 'tag'
+        run: |
+          rm -rf "$KIBOT_LOGS"
+          git add -A
+          git commit -m "Update outputs (release ${{ github.ref_name }})" || true
+          release_commit=$(git rev-parse HEAD)
+          git fetch origin main
+          git checkout -B main origin/main
+          git merge --no-ff "$release_commit" -X theirs \
+            -m "Merge outputs of release ${{ github.ref_name }}"
+          git push origin main
+          # Back to the release files for the next step
+          git checkout "$release_commit"
+
+      # Release assets of each board (multi-board: `boards` setting) and of its
+      # assembly variants, in one folder
+      - name: Collect release files
+        if: github.ref_type == 'tag'
+        env:
+          BOARDS: ${{ steps.settings.outputs.boards }}
+        run: |
+          dest="$RUNNER_TEMP/release"
+          mkdir -p "$dest"
+          shopt -s nullglob
+          add() {
+            for f in "$@"; do
+              [[ -f "$f" ]] || continue
+              if [[ -e "$dest/$(basename "$f")" ]]; then
+                echo "::warning::$f not attached, same name as another release file"
+              else
+                cp "$f" "$dest/"
+              fi
+            done
+          }
+          for b in ${BOARDS:-.}; do
+            add "$b"/Schematic/*.pdf "$b"/PCB/*.pdf "$b"/Manufacturing/Assembly/* \
+                "$b"/Manufacturing/Fabrication/*.{pdf,zip,txt} "$b"/Manufacturing/JLCPCB/* \
+                "$b"/3D/*.step "$b"/Images/*.png "$b"/Testing/Testpoints/*.csv \
+                "$b"/Manufacturing/Panel/*.{zip,png}
+            add "$b"/Variants/*/Schematic/*.pdf "$b"/Variants/*/Manufacturing/Assembly/* \
+                "$b"/Variants/*/Manufacturing/JLCPCB/*.zip
+          done
+          ls "$dest"
+
+      - name: Create GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ github.ref_name }}
+          body_path: ${{ runner.temp }}/release_notes.md
+          files: ${{ runner.temp }}/release/*

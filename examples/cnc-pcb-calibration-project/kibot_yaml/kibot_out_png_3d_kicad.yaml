@@ -1,0 +1,47 @@
+# KiBot output for 3D renders in PNG format using the KiCad 3D viewer
+# (kicad-cli pcb render on KiCad 10). Selected with RENDER_ENGINE: kicad
+# https://kibot.readthedocs.io/en/master/configuration/outputs/render_3d.html
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: render_3d
+  category: '@DIR@'
+  dir: '@DIR@'
+  options:
+    output: '%f-@SUFFIX@%I%v.%x'
+    use_cli: true
+    rotate_degrees: true
+    rotate_x: @KICAD_ROT_X@
+    rotate_y: @KICAD_ROT_Y@
+    height: @RESOLUTION@
+    width: @RESOLUTION@
+    view: '@VIEW@'
+    ray_tracing: @RAYTRACING@
+    realistic: true
+    force_stackup_colors: true
+    orthographic: true
+    auto_crop: true
+    transparent_background: true
+
+...
+definitions:
+  NAME: png_3d_viewer
+  COMMENT: 3D viewer PCB render in PNG format
+  DIR: Images
+  SUFFIX: ""
+  VIEW: top
+  # Ray tracing ('high' quality) adds a floor shadow around the board
+  RAYTRACING: false
+  KICAD_ROT_X: 0
+  KICAD_ROT_Y: 0
+  RESOLUTION: 2000
+  # Unused, accepted to share the definitions with the Blender engine
+  BLENDER_SAMPLES: 50
+  BLENDER_ROT_X: 0
+  BLENDER_ROT_Y: 0
+  BLENDER_ROT_Z: 0
+  PCB3D_OUTPUT: pcb3d_blender

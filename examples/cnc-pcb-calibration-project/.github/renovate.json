@@ -1,0 +1,30 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Update PRs for the KiBot image (kibot_settings.yaml) and the GitHub Actions. The PR check generates the outputs with the new version: compare them before merging.",
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "schedule": ["before 6am on monday"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Docker images pinned in kibot_settings.yaml (KiBot, draw.io exporter)",
+      "managerFilePatterns": ["/(^|/)kibot_settings\\.yaml$/"],
+      "matchStrings": ["(?:docker_image|drawio_image):\\s*(?<depName>[^:\\s]+):(?<currentValue>\\S+)"],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Tags KIBOT-BUILD_kKICAD_dDEBIAN_bBLENDER: order by KiBot version, KiCad 10.0.x patch, then image build (reset for each KiCad version). KiCad 10.1+ changes the file formats: not proposed, migrate manually. dev_ tags are ignored.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/inti-cmnb/kicad10_auto_full"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<revision>\\d+)(?<compatibility>_k10\\.0\\.)(?<build>\\d+)_d[\\d.]+_b[\\d.]+LTS$",
+      "commitMessageTopic": "KiBot image",
+      "prBodyNotes": ["Check the outputs of the PR run (pull request comment and artifacts) before merging: the new KiBot/KiCad version may change them."]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    }
+  ]
+}

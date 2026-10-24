@@ -1,0 +1,145 @@
+# KiBot output for printing the Gerber layers in PDF format
+# One page per fabrication layer, in color (or monochrome), handy to review
+# what is sent to the PCB manufacturer without a Gerber viewer.
+# https://kibot.readthedocs.io/en/master/configuration/outputs/pcb_print.html
+
+kibot:
+  version: 1
+
+outputs:
+- name: @NAME@
+  comment: '@COMMENT@'
+  type: pcb_print
+  category: '@DIR@'
+  dir: '@DIR@'
+  options:
+    output: '%f-gerbers%I%v.%x'
+    format: 'PDF'
+    title: 'Gerber Layers'
+    dpi: 1200
+    realistic_solder_mask: false
+    colored_pads: false
+    colored_vias: false
+    dnf_filter: _kibom_dnf_Config
+    frame_plot_mechanism: 'internal'
+    sheet_reference_layout: '@SHEET_WKS@'
+    # Keep the board away from the title block when autoscaling (SCALING: 0)
+    autoscale_margin_x: 20
+    autoscale_margin_y: 55
+    force_edge_cuts: true
+    forced_edge_cuts_color: '@COLOR_EDGE@'
+    color_theme: '@COLOR_THEME@'
+    pages:
+      # Top side, from outside to inside
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Top Silkscreen (F.Silkscreen)'
+        layer_var: 'Top Silkscreen (F.Silkscreen)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: F.Silkscreen
+            color: '@COLOR_F_SILK@'
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Top Solder Mask (F.Mask)'
+        layer_var: 'Top Solder Mask (F.Mask)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: F.Mask
+            color: '@COLOR_F_MASK@'
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Top Paste (F.Paste)'
+        layer_var: 'Top Paste (F.Paste)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        layers:
+          - layer: F.Paste
+            color: '@COLOR_F_PASTE@'
+      # All the copper layers, one page each (F.Cu, inners, B.Cu)
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: '%ln'
+        layer_var: '%ln'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        repeat_for_layer: 'F.Cu'
+        repeat_layers: 'copper'
+        layers:
+          - layer: F.Cu  # color from COLOR_THEME, one per copper layer
+      # Bottom side, viewed from the top (not mirrored, like a Gerber viewer)
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Bottom Paste (B.Paste)'
+        layer_var: 'Bottom Paste (B.Paste)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        mirror: @MIRROR_BOTTOM@
+        layers:
+          - layer: B.Paste
+            color: '@COLOR_B_PASTE@'
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Bottom Solder Mask (B.Mask)'
+        layer_var: 'Bottom Solder Mask (B.Mask)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        mirror: @MIRROR_BOTTOM@
+        layers:
+          - layer: B.Mask
+            color: '@COLOR_B_MASK@'
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Bottom Silkscreen (B.Silkscreen)'
+        layer_var: 'Bottom Silkscreen (B.Silkscreen)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        colored_holes: true
+        holes_color: '#FFFFFF'
+        mirror: @MIRROR_BOTTOM@
+        layers:
+          - layer: B.Silkscreen
+            color: '@COLOR_B_SILK@'
+      # Board outline
+      - scaling: @SCALING@
+        title: 'Gerber Layers'
+        sheet: 'Board Outline (Edge.Cuts)'
+        layer_var: 'Board Outline (Edge.Cuts)'
+        sheet_reference_color: '#000000'
+        monochrome: @MONOCHROME@
+        layers:
+          - layer: Edge.Cuts
+            color: '@COLOR_EDGE@'
+
+...
+definitions:
+  NAME: pdf_gerbers
+  COMMENT: Gerber layers in PDF format
+  DIR: Manufacturing/Fabrication
+  SHEET_WKS: ${KIPRJMOD}/Templates/Template_PCB_GIT_A4.kicad_wks
+  SCALING: 0  # 0 = fit the page
+  COLOR_THEME: Altium_Theme
+  MONOCHROME: false
+  # Layer colors (copper layers use COLOR_THEME)
+  COLOR_F_SILK: '#A08C00'
+  COLOR_F_MASK: '#9C3D9C'
+  COLOR_F_PASTE: '#7F7F7F'
+  COLOR_B_PASTE: '#5F5F8F'
+  COLOR_B_MASK: '#1F8C8C'
+  COLOR_B_SILK: '#7A3FB8'
+  COLOR_EDGE: '#000000'
+  MIRROR_BOTTOM: false

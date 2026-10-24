@@ -1,0 +1,68 @@
+# CNC isolation milling on a Makera Z1 (also Carvera / Carvera Air), 2 layers
+# Makera double-sided FR4 blanks: 1.5 mm, 35 um (1 oz) copper, no plating,
+# no soldermask, no silkscreen.
+# Apply with: ./run_kibot.sh --stackup makera_z1_2l
+#
+# Sources (community values, Makera doesn't publish PCB design rules):
+# - Makera community knowledge base, Discord #all-things-pcb and #z1-general
+# - https://github.com/brunostjohn/CarveraPCBGuide
+# - Makera Z1: 13000 rpm spindle, 0.02 mm motion resolution
+#
+# Isolation width = tip + 2 x depth x tan(angle / 2): a 0.1 mm 30 deg V-bit cuts
+# 0.13 mm at 0.05 mm depth and 0.18 mm at 0.15 mm (needed to clear the copper
+# of an uneven board), a 60 deg V-bit 0.27 mm at 0.15 mm. The Board Setup
+# minimums below are the process limits (0.2 mm isolation needs the 0.1 mm
+# 30 deg V-bit and mesh auto-leveling), the net classes keep a margin
+# (Z1 users report traces losing width with 60 deg V-bits).
+
+name: Makera Z1 FR4 1.5 mm
+description: CNC milled 2 layers 1.5 mm, 1 oz, unplated
+copper_finish: None
+solder_mask: false
+silkscreen: false
+
+layers:
+  - {copper: "L1 (Sig)", type: signal, thickness: 0.035}
+  - {dielectric: core, material: FR4, thickness: 1.43, epsilon_r: 4.5, loss_tangent: 0.02}
+  - {copper: "L2 (GND)", type: mixed, thickness: 0.035}
+
+design_rules: makera_z1_2layer.kicad_dru
+fabrication_notes: fabrication_notes_makera_z1.txt
+board_rules: {min_track_width: 0.25, min_clearance: 0.2, min_via_diameter: 1.2, min_through_hole_diameter: 0.6,
+              min_via_annular_width: 0.3, min_hole_to_hole: 0.5, min_hole_clearance: 0.3,
+              min_copper_edge_clearance: 0.5, min_text_height: 1.5, min_text_thickness: 0.2,
+              solder_mask_min_width: 0.0}
+# Via = rivet or wire: pick the size matching the rivet drill (i.e. Fortex 0.6 mm
+# rivets: 0.67 mm drill, 0.8 mm size). Keep them few, each one is set by hand.
+via_sizes: [[1.2, 0.6], [1.6, 0.8], [2.0, 1.0]]
+
+# Approximate impedance (not controlled): grounded coplanar lines, bare copper,
+# 0.3 mm milled gaps with a 0.05 mm groove in the FR4, L2 as ground plane.
+# Computed with kibot_resources/scripts/coplanar_impedance.py --groove 0.05
+# (Dk 4.5 assumed: cheap blanks are 4.2-4.8). Error sources: V-bit cut width
+# (+/-0.025 mm per side: 50R 47-52, 90R 84-96, 100R 92-108 ohm), Dk (+/-3 %),
+# groove depth (+/-4 %). Measure the milled gap, stitch the top ground pour to
+# L2 with vias along the lines. Recompute for another blank or gap.
+impedance:
+  - {line: Milled Grounded Coplanar (approx.), impedance: 50, tolerance: "approx. ±10 %", layer: L1 / L2, width: 1.48, gap: "-", gnd_gap: 0.3, ref: L2 / L1}
+  - {line: Milled Grounded Coplanar Diff. Pair (approx.), impedance: 90, tolerance: "approx. ±10 %", layer: L1 / L2, width: 0.97, gap: 0.3, gnd_gap: 0.3, ref: L2 / L1}
+  - {line: Milled Grounded Coplanar Diff. Pair (approx.), impedance: 100, tolerance: "approx. ±10 %", layer: L1 / L2, width: 0.70, gap: 0.3, gnd_gap: 0.3, ref: L2 / L1}
+
+# Net classes: Default and POWER set to these values, and every other class
+# raised to the minimums (tracks, clearance, vias), so the router places
+# machinable copper. Larger values are kept.
+netclasses:
+  - {name: Default, track_width: 0.4, clearance: 0.3, via_diameter: 1.6, via_drill: 0.8, diff_pair_width: 0.4,
+     diff_pair_gap: 0.3, diff_pair_via_gap: 0.3}
+  - {name: POWER, track_width: 1.0, clearance: 0.4, via_diameter: 2.0, via_drill: 1.0}
+  # Fine pitch escapes only (0.1 mm 30 deg V-bit, leveled board)
+  - {name: CNC_FINE, track_width: 0.25, clearance: 0.2, via_diameter: 1.2, via_drill: 0.6}
+  # Approximate impedance (table above): the net class clearance is the gap to
+  # the ground pour, keep the zone clearance at or below 0.3 mm
+  - {name: 50R, track_width: 1.48, clearance: 0.3, via_diameter: 1.6, via_drill: 0.8, diff_pair_width: 0.4, diff_pair_gap: 0.3}
+  - {name: USB_90R, track_width: 0.97, diff_pair_width: 0.97, diff_pair_gap: 0.3, diff_pair_via_gap: 0.3, clearance: 0.3,
+     via_diameter: 1.6, via_drill: 0.8}
+  - {name: DIFF_100R, track_width: 0.70, diff_pair_width: 0.70, diff_pair_gap: 0.3, diff_pair_via_gap: 0.3, clearance: 0.3,
+     via_diameter: 1.6, via_drill: 0.8}
+netclass_minimums: {track_width: 0.4, clearance: 0.3, via_diameter: 1.6, via_drill: 0.8, diff_pair_width: 0.4,
+                    diff_pair_gap: 0.3}

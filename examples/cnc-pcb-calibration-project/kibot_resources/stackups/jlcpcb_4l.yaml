@@ -1,0 +1,48 @@
+# JLCPCB 4 layers, 1.6 mm, stackup JLC04161H-7628 (JLCPCB default, no extra cost)
+# 1 oz outer copper, 0.5 oz inner copper
+# https://jlcpcb.com/impedance
+# Apply with: ./run_kibot.sh --stackup jlcpcb_4l
+
+name: JLC04161H-7628
+description: JLCPCB 4 layers 1.6 mm, 7628 prepreg
+copper_finish: HAL lead-free
+mask_color: Green
+silk_color: White
+mask_thickness: 0.01
+mask_epsilon_r: 3.8
+
+# Top to bottom. Copper layers: user name and KiCad type (signal, power, mixed, jumper)
+layers:
+  - {copper: "L1 (Sig)", type: signal, thickness: 0.035}
+  - {dielectric: prepreg, material: "7628", thickness: 0.2104, epsilon_r: 4.4, loss_tangent: 0.02}
+  - {copper: "L2 (GND)", type: power, thickness: 0.0152}
+  - {dielectric: core, material: FR4, thickness: 1.065, epsilon_r: 4.6, loss_tangent: 0.02}
+  - {copper: "L3 (PWR)", type: power, thickness: 0.0152}
+  - {dielectric: prepreg, material: "7628", thickness: 0.2104, epsilon_r: 4.4, loss_tangent: 0.02}
+  - {copper: "L4 (Sig)", type: signal, thickness: 0.035}
+
+# JLCPCB multilayer capabilities (design rules file of kibot_resources/stackups)
+design_rules: jlcpcb_multilayer.kicad_dru
+fabrication_notes: fabrication_notes_jlcpcb.txt
+board_rules: {min_track_width: 0.09, min_clearance: 0.09, min_via_diameter: 0.45, min_through_hole_diameter: 0.2,
+              min_via_annular_width: 0.125, min_hole_to_hole: 0.2, min_hole_clearance: 0.2,
+              min_copper_edge_clearance: 0.3, min_text_height: 1.0, min_text_thickness: 0.15,
+              solder_mask_min_width: 0.1}
+via_sizes: [[0.45, 0.2], [0.6, 0.3], [0.8, 0.4]]
+
+# Impedance table of the fabrication document (written to
+# kibot_resources/templates/impedance_table.txt by --stackup).
+# Values from the JLCPCB impedance calculator for JLC04161H-7628, outer layers
+# referenced to the adjacent plane: https://jlcpcb.com/pcb-impedance-calculator
+impedance:
+  - {line: Coated Microstrip, impedance: 50, tolerance: "±10 %", layer: L1 / L4, width: 0.3586, gap: "-", ref: L2 / L3}
+  - {line: Edge-Coupled Coated Microstrip, impedance: 90, tolerance: "±10 %", layer: L1 / L4, width: 0.2906, gap: 0.2032, ref: L2 / L3}
+  - {line: Edge-Coupled Coated Microstrip, impedance: 100, tolerance: "±10 %", layer: L1 / L4, width: 0.2258, gap: 0.2032, ref: L2 / L3}
+
+# Net classes created/updated in the project (assign them to your nets).
+# Microstrips: clearance ~3x the prepreg height, so the neighbouring copper
+# doesn't change the impedance
+netclasses:
+  - {name: 50R, track_width: 0.3586, clearance: 0.65}
+  - {name: USB_90R, track_width: 0.2906, diff_pair_width: 0.2906, diff_pair_gap: 0.2032, clearance: 0.65}
+  - {name: DIFF_100R, track_width: 0.2258, diff_pair_width: 0.2258, diff_pair_gap: 0.2032, clearance: 0.65}

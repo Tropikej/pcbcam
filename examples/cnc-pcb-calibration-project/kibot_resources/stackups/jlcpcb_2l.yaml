@@ -1,0 +1,41 @@
+# JLCPCB 2 layers, 1.6 mm, stackup JLC0216A (1 oz, 1.43 mm core)
+# https://jlcpcb.com/pcb-impedance-calculator
+# Apply with: ./run_kibot.sh --stackup jlcpcb_2l
+
+name: JLC0216A
+description: JLCPCB 2 layers 1.6 mm, 1 oz
+copper_finish: HAL lead-free
+mask_color: Green
+silk_color: White
+mask_thickness: 0.01
+mask_epsilon_r: 3.8
+
+# Top to bottom. Copper layers: user name and KiCad type (signal, power, mixed, jumper)
+layers:
+  - {copper: "L1 (Sig)", type: signal, thickness: 0.030}
+  - {dielectric: core, material: FR4, thickness: 1.43, epsilon_r: 4.6, loss_tangent: 0.02}
+  - {copper: "L2 (Sig, GND)", type: mixed, thickness: 0.030}
+
+# JLCPCB 1-2 layers capabilities (design rules file of kibot_resources/stackups)
+design_rules: jlcpcb_2layer.kicad_dru
+fabrication_notes: fabrication_notes_jlcpcb.txt
+board_rules: {min_track_width: 0.1, min_clearance: 0.1, min_via_diameter: 0.5, min_through_hole_diameter: 0.3,
+              min_via_annular_width: 0.1, min_hole_to_hole: 0.2, min_hole_clearance: 0.2,
+              min_copper_edge_clearance: 0.3, min_text_height: 1.0, min_text_thickness: 0.15,
+              solder_mask_min_width: 0.1}
+via_sizes: [[0.6, 0.3], [0.8, 0.4]]
+
+# Controlled impedance, from the JLCPCB impedance calculator for JLC0216A.
+# With a 1.43 mm core, microstrips would be ~3 mm wide: these are coplanar
+# lines with a ground pour 0.2032 mm away (net class clearance = gap to GND,
+# keep the zone clearance at or below it), L2 as reference plane.
+impedance:
+  - {line: Coated Coplanar Waveguide, impedance: 50, tolerance: "±10 %", layer: L1 / L2, width: 0.9182, gap: "-", gnd_gap: 0.2032, ref: L2 / L1}
+  - {line: Coated Coplanar Diff. Pair, impedance: 90, tolerance: "±10 %", layer: L1 / L2, width: 0.4625, gap: 0.2032, gnd_gap: 0.2032, ref: L2 / L1}
+  - {line: Coated Coplanar Diff. Pair, impedance: 100, tolerance: "±10 %", layer: L1 / L2, width: 0.3058, gap: 0.2032, gnd_gap: 0.2032, ref: L2 / L1}
+
+# Net classes created/updated in the project (assign them to your nets)
+netclasses:
+  - {name: 50R, track_width: 0.9182, clearance: 0.2032}
+  - {name: USB_90R, track_width: 0.4625, diff_pair_width: 0.4625, diff_pair_gap: 0.2032, clearance: 0.2032}
+  - {name: DIFF_100R, track_width: 0.3058, diff_pair_width: 0.3058, diff_pair_gap: 0.2032, clearance: 0.2032}
