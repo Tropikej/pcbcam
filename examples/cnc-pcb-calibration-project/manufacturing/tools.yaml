@@ -39,6 +39,22 @@ tools:
     feed_mm_min: 60  # very gentle: last bit of this size; raise once it cuts cleanly
     plunge_mm_min: 10
 
+  # The 0.1 mm bit after its tip broke (2026-10-24): tool length 0.964 -> 0.777,
+  # 0.187 mm shorter, so the flat end is about 0.1 + 2 x 0.187 x tan(10 deg)
+  # = 0.166 mm. A break is not a clean grind: cut the GAP ladder once, measure
+  # the grooves and replace this estimate with calibration points.
+  vbit_20_0.17_broken:
+    type: vbit
+    number: 3
+    description: Dreanique 3.175 20deg 0.1, broken tip (est. 0.166 flat)
+    angle_deg: 20
+    tip_diameter_mm: 0.166
+    # calibration:
+    #   - {depth_mm: 0.08, width_mm: ...}
+    rpm: 12000
+    feed_mm_min: 60
+    plunge_mm_min: 10
+
   # PCB drill set 0.3 - 1.2 mm. The small ones break easily: slow plunge.
   drill_0.3: {type: drill, number: 10, diameter_mm: 0.3, rpm: 12000, plunge_mm_min: 20}
   drill_0.4: {type: drill, number: 11, diameter_mm: 0.4, rpm: 12000, plunge_mm_min: 25}
