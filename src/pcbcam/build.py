@@ -149,25 +149,26 @@ def run(
 
     # 4. Post-process and validate each job.
     jobs = [
-        ("board_front.ngc", "01_isolation_front.nc", "isolation (front)", res.isolation, True),
-        ("board_drill.ngc", "02_drill.nc", "drilling", res.drills, False),
-        ("board_milldrill.ngc", "03_milldrill.nc", "milled holes", [res.milldrill] if res.milldrill else [], False),
-        ("board_outline.ngc", "04_outline.nc", "board outline", [res.outline] if res.outline else [], False),
+        ("board_front.ngc", "01_isolation_front", "isolation (front)", res.isolation, True),
+        ("board_drill.ngc", "02_drill", "drilling", res.drills, False),
+        ("board_milldrill.ngc", "03_milldrill", "milled holes", [res.milldrill] if res.milldrill else [], False),
+        ("board_outline.ngc", "04_outline", "board outline", [res.outline] if res.outline else [], False),
     ]
     slack = max(t.width_mm for t in res.all()) / 2 + 0.01
     gcode_dir = out / "gcode"
     gcode_dir.mkdir(parents=True)
     issues: list[str] = []
-    for src_name, dst_name, label, tools, probe in jobs:
+    for src_name, stem, label, tools, probe in jobs:
         src = work / src_name
         if not src.is_file() or not tools:
             continue
-        job = postprocess.Job(label, tools, probe=probe, drilling=src_name == "board_drill.ngc")
+        dst_name = f"{stem}.{p.machine.file_extension}"
+        job = postprocess.Job(label, tools, program=stem, probe=probe, drilling=src_name == "board_drill.ngc")
         text = postprocess.process(src.read_text(encoding="utf-8"), job, p.machine, recipe.probing)
         for issue in validate.check(text, p.machine, recipe, slack):
             issues.append(f"{dst_name}: {issue}")
         dst = gcode_dir / dst_name
-        dst.write_text(text, encoding="utf-8", newline="\n")
+        dst.write_bytes(text.encode("ascii"))  # line endings come from the profile
         result.jobs.append(dst)
     if issues:
         raise BuildFailed(issues)

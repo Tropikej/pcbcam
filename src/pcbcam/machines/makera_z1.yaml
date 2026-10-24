@@ -1,32 +1,52 @@
 # Makera Z1 / Z1 Pro -- Smoothieware-based firmware (MakeraInc/MakeraZ1Firmware).
 #
-# NOT verified on hardware yet. Sources for each choice:
-#   * G4 P is seconds: Z1 firmware behaviour reported in GridSpace/grid-apps PR #498.
-#   * M6 T<n> on one line, T0 = probe: Carvera Community firmware docs/commands.json.
-#   * G32 X Y A B I J H grid + compensation until M370/M561: same commands.json;
-#     config_z1.default enables leveling-strategy.rectangular-grid (max 15x15).
-# Before trusting any of this: air cut, then a shallow cut on scrap.
+# Output format copied from Makera's own Fusion 360 post-processor
+# (Carvera.cps "Makera Carvera Community Post v1.4.6", manual tool change mode
+# "Stock Air/Z1") and checked against .cnc files it produced for a Z1:
+#   * extension "cnc", CRLF line endings: Makera Studio shows no preview for .nc
+#   * T<n>M6 (any tool number), then M400, M851 S100 (External Control on --
+#     the post's "defaultUseExternalControl", e.g. a vacuum), S<rpm> M3, G54
+#   * G4 P<seconds>
+#   * end: M5, M400, M852 (External Control off), G28 (clearance), M30
+# Height map (experimental, not used by default): G32 X Y A B I J H grid with
+# compensation until M370 -- Carvera Community firmware docs/commands.json and
+# config_z1.default (leveling-strategy.rectangular-grid).
+#
+# NOT verified on hardware yet: air cut first, then a shallow cut on scrap.
 name: Makera Z1
 verified: false
 notes: >
   Auto-leveling via G32 is experimental: it is unconfirmed which tool the Z1 probes
   with and whether Makera Studio keeps the compensation for an imported file.
 dwell_unit: s
+file_extension: cnc
+line_ending: crlf
 header: |
-  G21
-  G90
-  G94
+  ({program})
+  (Machine)
+  (  vendor: Makera)
+  (  model: Z1 3 axis)
+  {info}
+  G90 G94
   G17
+  G21
 footer: |
   M5
-  M2
-tool_change: "M6 T{number}"
-spindle_on: "M3 S{rpm}"
+  M400
+  M852
+  G28
+  M30
+tool_change: "T{number}M6"
+spindle_on: |
+  M400
+  M851 S100
+  S{rpm} M3
+  G54
 # Probe with the probe (T0), then the isolation tool change re-measures tool length.
 probe_grid: |
-  M6 T0
+  T0M6
   G32 X{x} Y{y} A{a} B{b} I{i} J{j} H{h}
 drop_words: [M0, M9, G64, G91.1, G80]
-allowed_words: [G0, G1, G2, G3, G4, G17, G21, G32, G90, G94, M2, M3, M5, M6]
+allowed_words: [G0, G1, G2, G3, G4, G17, G21, G28, G32, G54, G90, G94, M3, M5, M6, M30, M400, M851, M852]
 max_feed_mm_min: 3000
 max_rpm: 15000  # verify against your spindle's rating

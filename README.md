@@ -19,7 +19,7 @@ tools.yaml ───┴─► preflight ── project DRC (your rules, errors o
                     ▼
                  millproject ──► pcb2gcode (pinned Docker image, warnings fatal)
                     ▼
-                 Z1 post-processor ──► validator ──► gcode/*.nc + manifest.json
+                 Z1 post-processor ──► validator ──► gcode/*.cnc + manifest.json
 ```
 
 * **V-bits are modelled properly.** pcb2gcode only knows cylindrical cutters, so
@@ -32,7 +32,7 @@ tools.yaml ───┴─► preflight ── project DRC (your rules, errors o
 * **pcb2gcode warnings fail the build.** A "contentions" warning means the last
   cutter would eat into copper.
 * **Z1 post-processing**, from pcb2gcode 3.0.4's source and the Z1 firmware docs:
-  `G04 P` milliseconds → seconds, `T1`/`M6`/`M0` → `M6 T1`, per-tool `M3 S<rpm>`,
+  `G04 P` milliseconds → seconds, `T1`/`M6`/`M0` → `T1M6`, per-tool `S<rpm> M3`,
   drops `M0 M9 G64 G91.1 G80`; optional `G32` height-map probing before isolation.
 * **Validator** rejects anything outside the profile's allowed words, inch or
   relative mode, feeds/rpm over limits, XY outside the stock, Z deeper than the
@@ -50,10 +50,10 @@ tools.yaml ───┴─► preflight ── project DRC (your rules, errors o
 ```
 manufacturing-output/
 ├── gcode/
-│   ├── 01_isolation_front.nc
-│   ├── 02_drill.nc
-│   ├── 03_milldrill.nc        holes larger than any drill
-│   └── 04_outline.nc          with tabs; always run last
+│   ├── 01_isolation_front.cnc
+│   ├── 02_drill.cnc
+│   ├── 03_milldrill.cnc        holes larger than any drill
+│   └── 04_outline.cnc          with tabs; always run last
 ├── preview/*.svg              pcb2gcode toolpath renders
 ├── manifest.json              versions, hashes, tools, hole assignments
 └── work/                      exported Gerbers, millproject, logs, DRC reports

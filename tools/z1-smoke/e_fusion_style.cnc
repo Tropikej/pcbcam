@@ -1,0 +1,25 @@
+(smoke)
+(Machine)
+(  vendor: Makera)
+(  model: Z1 3 axis)
+G90 G94
+G17
+G21
+T1M6
+M400
+M851 S100
+S12000 M3
+G54
+G0 Z10
+G0 X10 Y10
+G1 X50 Y10 F600
+G1 X50 Y40
+G1 X10 Y40
+G1 X10 Y10
+G0 Z15
+G0 X0 Y0
+M5
+M400
+M852
+G28
+M30

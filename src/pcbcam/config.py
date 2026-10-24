@@ -208,10 +208,14 @@ class MachineProfile(_Strict):
     verified: bool = False
     notes: str = ""
     dwell_unit: Literal["s", "ms"]
+    file_extension: str = "nc"
+    line_ending: Literal["lf", "crlf"] = "lf"
+    # File header lines. "{program}" is the job name; a line "{info}" is
+    # replaced by pcbcam's comments (job, warnings, tool list).
     header: str
     footer: str
-    tool_change: str  # format string, fields: {number} {name} {diameter_mm}
-    spindle_on: str  # format string, field: {rpm}
+    tool_change: str  # lines, fields: {number} {name} {diameter_mm}
+    spindle_on: str  # lines, field: {rpm}
     probe_grid: str | None = None  # fields: {x} {y} {a} {b} {i} {j} {h}
     drop_words: list[str] = []  # whole lines starting with these words are removed
     allowed_words: list[str]  # anything else fails validation
