@@ -1,0 +1,50 @@
+# Machining recipe: how to make this board with the tools in tools.yaml.
+# EVERY NUMBER BELOW IS A STARTING POINT, NOT A VALIDATED SETTING.
+
+machine: makera_z1          # bundled profile, or a path to your own profile YAML
+tools: tools.yaml           # relative to this file; can point at a shared library
+
+stock:                      # the copper-clad blank; work zero is its lower-left corner
+  size_x_mm: 100
+  size_y_mm: 70
+  thickness_mm: 1.6
+  copper_thickness_mm: 0.035
+
+placement:                  # where the board sits on the blank
+  margin_x_mm: 5
+  margin_y_mm: 5
+
+heights:
+  safe_mm: 2                # rapid moves
+  tool_change_mm: 15
+
+isolation:
+  side: front
+  tools: [vbit_30_0.1]      # widest first; the last one must fit every gap
+  depth_mm: 0.08
+  # isolation_width_mm: 0.4 # clear this much copper around traces where it fits
+  overlap_percent: 50
+
+drilling:
+  tools: [drill_0.8, drill_1.0]
+  depth_mm: 1.9             # through the blank and a little into the spoilboard
+  match_tolerance_mm: 0.05  # KiCad hole size -> drill bit rounding allowed
+  milldrill_tool: endmill_1.0
+
+outline:
+  tool: endmill_1.0
+  depth_mm: 1.7
+  stepdown_mm: 0.4
+  tabs: {count: 4, width_mm: 1.5, height_mm: 0.5}
+
+checks:                     # machine DRC, run on top of the project's own DRC
+  clearance_margin_mm: 0.02
+  min_track_width_mm: 0.2
+  min_annular_ring_mm: 0.25
+  min_hole_to_hole_mm: 0.3
+
+probing:                    # experimental: G32 height map before isolation
+  enabled: false
+  points_x: 5
+  points_y: 5
+  probe_height_mm: 2

@@ -1,0 +1,46 @@
+# Tool library: the cutters you physically own.
+#
+# Units are in the field names: mm, mm/min, rpm, degrees.
+# `number` is the tool number used in `M6 T<number>`; keep it consistent with
+# how you label tools on the bench. T0 is reserved for the probe.
+#
+# EVERY NUMBER BELOW IS A STARTING POINT, NOT A VALIDATED SETTING.
+
+tools:
+  vbit_30_0.1:
+    type: vbit
+    number: 1
+    description: 30 deg engraving bit, 0.1 mm tip
+    angle_deg: 30
+    tip_diameter_mm: 0.1
+    # Measure real groove widths on a test cut and list them here; they replace
+    # the ideal-cone formula. Depths outside the listed range are then refused.
+    # calibration:
+    #   - {depth_mm: 0.05, width_mm: 0.14}
+    #   - {depth_mm: 0.10, width_mm: 0.17}
+    rpm: 12000
+    feed_mm_min: 150
+    plunge_mm_min: 60
+
+  drill_0.8:
+    type: drill
+    number: 2
+    diameter_mm: 0.8
+    rpm: 12000
+    plunge_mm_min: 60
+
+  drill_1.0:
+    type: drill
+    number: 3
+    diameter_mm: 1.0
+    rpm: 12000
+    plunge_mm_min: 60
+
+  endmill_1.0:
+    type: endmill
+    number: 4
+    description: 1 mm 2-flute corn/end mill for holes > 1.1 mm and the outline
+    diameter_mm: 1.0
+    rpm: 12000
+    feed_mm_min: 200
+    plunge_mm_min: 60
