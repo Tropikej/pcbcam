@@ -1,0 +1,20 @@
+(smoke test d -- tool change and spindle, still 10 mm up)
+G21
+G90
+G94
+G17
+G0 Z15
+M5
+M6 T1
+M3 S12000
+G4 P3
+G0 Z10
+G0 X10 Y10
+G1 X50 Y10 F600
+G1 X50 Y40
+G1 X10 Y40
+G1 X10 Y10
+G0 Z15
+G0 X0 Y0
+M5
+M2

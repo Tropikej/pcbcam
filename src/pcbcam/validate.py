@@ -17,6 +17,25 @@ class Issue:
         return f"line {self.line}: {self.message}"
 
 
+def _comment_problem(line: str) -> str | None:
+    """Comment syntax that strict parsers reject silently (suspected in Makera Studio)."""
+    if any(ord(c) > 126 or (ord(c) < 32 and c != "\t") for c in line):
+        return "non-ASCII or control character"
+    depth = 0
+    for c in line:
+        if c == "(":
+            depth += 1
+            if depth > 1:
+                return "nested '(' inside a comment"
+        elif c == ")":
+            depth -= 1
+            if depth < 0:
+                return "')' without a matching '('"
+        elif c == ";" and depth:
+            return "';' inside a (comment)"
+    return "unclosed '(' comment" if depth else None
+
+
 def check(gcode: str, profile: MachineProfile, recipe: Recipe, xy_slack_mm: float) -> list[Issue]:
     """``xy_slack_mm`` allows tool paths outside the stock by this much (cutter radius)."""
     allowed = {w.upper() for w in profile.allowed_words}
@@ -28,6 +47,8 @@ def check(gcode: str, profile: MachineProfile, recipe: Recipe, xy_slack_mm: floa
     z = None
 
     for n, raw in enumerate(gcode.splitlines(), start=1):
+        if problem := _comment_problem(raw):
+            issues.append(Issue(n, problem))
         code, _ = split_comment(raw)
         if not code:
             continue

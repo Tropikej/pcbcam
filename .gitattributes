@@ -1,0 +1,2 @@
+# Keep the smoke-test line endings exactly as written (LF vs CRLF is what they test)
+tools/z1-smoke/*.nc -text
