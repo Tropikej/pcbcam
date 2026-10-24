@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import __version__, excellon, kicad, millproject, postprocess, validate
+from . import __version__, excellon, gerber, kicad, millproject, postprocess, validate
 from .config import ConfigError, MachineProfile, Recipe, load_machine, load_recipe, load_tools
 from .pcb2gcode import Pcb2GcodeError, Runner
 from .tooling import HoleAssignment, Resolved, assign_holes, resolve
@@ -39,6 +39,7 @@ class Result:
     out: Path
     jobs: list[Path] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    board_size: tuple[float, float] | None = None
 
 
 def find_board(project: Path) -> Path:
@@ -84,8 +85,11 @@ def run(
 ) -> Result:
     runner = runner or Runner.from_env()
     recipe, res = p.recipe, p.resolved
-    if out.exists():
-        shutil.rmtree(out)
+    # Empty rather than delete: on Windows the folder is often open in a shell
+    # or Explorer, which makes removing the directory itself fail.
+    out.mkdir(parents=True, exist_ok=True)
+    for child in out.iterdir():
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
     work = out / "work"
     gerbers = work / "gerbers"
     result = Result(out)
@@ -125,8 +129,16 @@ def run(
     files = {"front": rel(exports.front), "outline": rel(exports.outline)}
     if exports.drill:
         files["drill"] = rel(exports.drill)
+    xmin, ymin, xmax, ymax = gerber.outline_bbox(exports.outline)
+    board_w, board_h = xmax - xmin, ymax - ymin
+    pl = recipe.placement
+    if pl.margin_x_mm + board_w > recipe.stock.size_x_mm or pl.margin_y_mm + board_h > recipe.stock.size_y_mm:
+        raise BuildFailed([
+            f"board {board_w:.1f} x {board_h:.1f} mm at ({pl.margin_x_mm}, {pl.margin_y_mm}) does not fit "
+            f"the {recipe.stock.size_x_mm} x {recipe.stock.size_y_mm} mm stock"])
+    result.board_size = (board_w, board_h)
     (work / "millproject").write_text(
-        millproject.render(recipe, res, assignments, files), encoding="utf-8")
+        millproject.render(recipe, res, assignments, files, (xmin, ymin)), encoding="utf-8")
     try:
         log = runner.run(work)
     except Pcb2GcodeError as e:
@@ -150,7 +162,7 @@ def run(
         src = work / src_name
         if not src.is_file() or not tools:
             continue
-        job = postprocess.Job(label, tools, probe=probe)
+        job = postprocess.Job(label, tools, probe=probe, drilling=src_name == "board_drill.ngc")
         text = postprocess.process(src.read_text(encoding="utf-8"), job, p.machine, recipe.probing)
         for issue in validate.check(text, p.machine, recipe, slack):
             issues.append(f"{dst_name}: {issue}")
@@ -178,9 +190,9 @@ def _manifest(p: Plan, result: Result, holes: list[HoleAssignment], cli: str, ru
         "board": {"file": p.board.name, "sha256": _sha256(p.board)},
         "recipe": {"file": p.recipe_path.name, "sha256": _sha256(p.recipe_path)},
         "machine": {"name": p.machine.name, "verified": p.machine.verified},
-        "origin": "work zero = stock lower-left corner; board outline starts at "
-                  f"({p.recipe.placement.margin_x_mm}, {p.recipe.placement.margin_y_mm}) mm "
-                  "minus the outline cutter diameter",
+        "origin": "work zero = stock lower-left corner, top of the copper; board outline "
+                  f"lower-left corner at ({p.recipe.placement.margin_x_mm}, {p.recipe.placement.margin_y_mm}) mm",
+        "board_size_mm": [round(v, 3) for v in result.board_size] if result.board_size else None,
         "tools": [
             {"number": t.number, "name": t.name, "type": t.tool.type, "cut_width_mm": round(t.width_mm, 4)}
             for t in res.all()

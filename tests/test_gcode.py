@@ -1,3 +1,5 @@
+import pytest
+
 from pcbcam import excellon, millproject, postprocess, validate
 from pcbcam.tooling import assign_holes, resolve
 
@@ -96,11 +98,80 @@ def test_excellon_parse(tmp_path):
 def test_millproject(recipe, tools):
     res = resolve(recipe, tools)
     holes = assign_holes({0.8: 3, 3.2: 1}, res, 0.05)
-    text = millproject.render(recipe, res, holes, {"front": "f.gbr", "outline": "o.gbr", "drill": "d.drl"})
+    text = millproject.render(recipe, res, holes, {"front": "f.gbr", "outline": "o.gbr", "drill": "d.drl"},
+                              (130.0, -128.0))
     opts = dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
     assert opts["mill-diameters"] == "0.1429mm"
     assert opts["zwork"] == "-0.08"
     assert opts["drills-available"] == "0.8mm:0.05mm,1mm:0.05mm"
     assert opts["milldrill-diameter"] == "1mm"
     assert opts["zbridges"] == "-1.1"  # 1.6 stock - 0.5 tab
-    assert opts["x-offset"] == "-5"
+    assert opts["zero-start"] == "false"
+    assert opts["x-offset"] == "-125"  # 5 mm margin - 130 mm KiCad X
+    assert opts["y-offset"] == "133"   # 5 mm margin + 128 mm (Gerber Y is up)
+
+
+def test_outline_bbox_with_rounded_corners(tmp_path):
+    from pcbcam.gerber import outline_bbox
+
+    # KiCad-style 10 x 5 mm outline with 1 mm corner arcs, X 130..140, Y -75..-70
+    g = tmp_path / "edge.gbr"
+    g.write_text(
+        "%FSLAX46Y46*%\n%MOMM*%\nG75*\nG01*\n"
+        "X130000000Y-71000000D02*\nG03*\nX131000000Y-70000000I1000000J0D01*\nG01*\n"
+        "X139000000Y-70000000D01*\nG02*\nX140000000Y-71000000I0J-1000000D01*\nG01*\n"
+        "X140000000Y-74000000D01*\nG02*\nX139000000Y-75000000I-1000000J0D01*\nG01*\n"
+        "X131000000Y-75000000D01*\nG02*\nX130000000Y-74000000I0J1000000D01*\nG01*\n"
+        "X130000000Y-71000000D01*\nM02*\n"
+    )
+    assert outline_bbox(g) == pytest.approx((130.0, -75.0, 140.0, -70.0))
+
+
+def test_outline_bbox_circle(tmp_path):
+    from pcbcam.gerber import outline_bbox
+
+    g = tmp_path / "round.gbr"  # full circle r=5 around (10, 10), drawn as one arc
+    g.write_text("%FSLAX46Y46*%\n%MOMM*%\nG75*\nX15000000Y10000000D02*\n"
+                 "G02*\nX15000000Y10000000I-5000000J0D01*\nM02*\n")
+    assert outline_bbox(g) == pytest.approx((5.0, 5.0, 15.0, 15.0))
+
+
+PCB2GCODE_DRILL = """\
+G94       (Millimeters per minute feed rate.)
+G21       (Units == Millimeters.)
+G90       (Absolute coordinates.)
+G00 S12000     (RPM spindle speed.)
+
+G00 Z15.00000 (Retract)
+T1
+M5      (Spindle stop.)
+G04 P2000
+(MSG, Change tool bit to drill size 1mm)
+M6      (Tool change.)
+M0      (Temporary machine stop.)
+M3      (Spindle on clockwise.)
+G0 Z2.00000
+G04 P3000
+
+G1 F20.00000
+G0 X10.00000 Y10.00000
+G1 Z-1.80000
+G1 Z2.00000
+G00 Z15.000 ( All done -- retract )
+
+M5      (Spindle off.)
+G04 P2000
+M9      (Coolant off.)
+M2      (Program end.)
+"""
+
+
+def test_drill_feeds_per_tool(recipe, tools, z1):
+    res = resolve(recipe, tools)
+    out = postprocess.process(PCB2GCODE_DRILL, postprocess.Job("drill", res.drills, drilling=True), z1)
+    lines = out.splitlines()
+    assert "M6 T3" in lines and "M3 S11000" in lines  # d10: number 3, 11000 rpm
+    assert "G1 F50" in lines                         # d10 plunge, not the global F20
+    assert "G0 Z2" in lines and "G1 Z2.00000" not in lines
+    assert "(T3 d10: drill 1 mm)" in lines and not any("d08" in l for l in lines)
+    assert validate.check(out, z1, recipe, xy_slack_mm=0.5) == []

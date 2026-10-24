@@ -21,15 +21,22 @@ def render(
     resolved: Resolved,
     holes: list[HoleAssignment],
     files: dict[str, str],
+    outline_min: tuple[float, float],
 ) -> str:
-    """``files`` maps pcb2gcode inputs (front, outline, drill) to container paths."""
+    """``files`` maps pcb2gcode inputs (front, outline, drill) to container paths.
+
+    ``outline_min`` is the board outline's lower-left corner in Gerber
+    coordinates. pcb2gcode *adds* x/y-offset to Gerber coordinates (checked on
+    3.0.4), so this puts that corner exactly at the placement margins.
+    """
     h = recipe.heights
     lines: dict[str, str] = {
         "metric": "true",
         "metricoutput": "true",
-        "zero-start": "true",
-        "x-offset": _fmt(-recipe.placement.margin_x_mm),
-        "y-offset": _fmt(-recipe.placement.margin_y_mm),
+        # zero-start would zero on the outline grown by the cutter diameter.
+        "zero-start": "false",
+        "x-offset": _fmt(recipe.placement.margin_x_mm - outline_min[0]),
+        "y-offset": _fmt(recipe.placement.margin_y_mm - outline_min[1]),
         "zsafe": _fmt(h.safe_mm),
         "zchange": _fmt(h.tool_change_mm),
         "nog64": "true",
