@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, build, kicad
+from . import __version__, build, crop, kicad, validate
 from .config import ConfigError
 from .pcb2gcode import Pcb2GcodeError
 from .postprocess import PostProcessError
@@ -39,6 +39,36 @@ def _print_tools(p: build.Plan) -> None:
     print(f"set KiCad clearance to at least {gap:.3f} mm (the machine DRC enforces this)")
 
 
+def _crop(p: build.Plan, out: Path, job: str, box_args: list[str]) -> int:
+    ext = p.machine.file_extension
+    src = out / "gcode" / f"{job}.{ext}"
+    if not src.is_file():
+        raise ConfigError(f"{src} not found: run 'pcbcam build' first")
+    boxes = []
+    for b in box_args:
+        try:
+            x0, y0, x1, y1 = (float(v) for v in b.split(","))
+        except ValueError:
+            raise ConfigError(f"--box {b!r}: expected X0,Y0,X1,Y1") from None
+        boxes.append((min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)))
+    eol = "\r\n" if p.machine.line_ending == "crlf" else "\n"
+    res = crop.crop(src.read_text(encoding="ascii"), boxes, p.recipe.heights.safe_mm, eol,
+                    approach_z=p.recipe.heights.approach_mm)
+    slack = max(t.width_mm for t in p.resolved.all()) / 2 + 0.01
+    issues = validate.check(res.text, p.machine, p.recipe, slack)
+    if issues:
+        print(f"FAILED: {len(issues)} problem(s) in the cropped job", file=sys.stderr)
+        for i in issues[:20]:
+            print(f"  - {i}", file=sys.stderr)
+        return 1
+    dst = src.with_name(f"{job}_crop.{ext}")
+    dst.write_bytes(res.text.encode("ascii"))
+    print(f"wrote {dst}")
+    print(f"kept {res.cut_mm / 1000:.2f} m of {res.cut_total_mm / 1000:.2f} m cutting, "
+          f"about {res.minutes:.0f} min plus rapids and the tool change")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="pcbcam", description=__doc__)
     ap.add_argument("--version", action="version", version=f"pcbcam {__version__}")
@@ -53,14 +83,24 @@ def main(argv: list[str] | None = None) -> int:
         sp.add_argument("--recipe", help=f"recipe file (default: <project>/{DEFAULT_RECIPE.as_posix()})")
         if name != "tools":
             sp.add_argument("--out", help=f"output directory (default: <project>/{DEFAULT_OUT})")
+        if name in ("build", "check"):
             sp.add_argument("--skip-project-drc", action="store_true",
                             help="skip the board's own DRC (the machine DRC still runs)")
             sp.add_argument("--skip-drc", action="store_true", help="skip both DRC passes")
+    cp = sub.add_parser("crop", help="cut only rectangles of a built isolation job (short test cuts)")
+    cp.add_argument("project", help="KiCad project directory or .kicad_pcb file")
+    cp.add_argument("--recipe", help=f"recipe file (default: <project>/{DEFAULT_RECIPE.as_posix()})")
+    cp.add_argument("--out", help=f"output directory of the build (default: <project>/{DEFAULT_OUT})")
+    cp.add_argument("--job", default="01_isolation_front", help="job to crop (default: %(default)s)")
+    cp.add_argument("--box", action="append", required=True, metavar="X0,Y0,X1,Y1",
+                    help="rectangle to keep, work coordinates in mm; repeat for several")
     args = ap.parse_args(argv)
 
     try:
         project, recipe, out = _paths(args)
         p = build.plan(project, recipe)
+        if args.cmd == "crop":
+            return _crop(p, out, args.job, args.box)
         if args.cmd == "tools":
             _print_tools(p)
             return 0
@@ -75,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
         for line in e.problems:
             print(f"  - {line}", file=sys.stderr)
         return 1
-    except (ConfigError, kicad.KiCadError, Pcb2GcodeError, PostProcessError) as e:
+    except (ConfigError, kicad.KiCadError, Pcb2GcodeError, PostProcessError, crop.CropError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
 

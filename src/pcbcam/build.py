@@ -163,7 +163,8 @@ def run(
         if not src.is_file() or not tools:
             continue
         dst_name = f"{stem}.{p.machine.file_extension}"
-        job = postprocess.Job(label, tools, program=stem, probe=probe, drilling=src_name == "board_drill.ngc")
+        job = postprocess.Job(label, tools, program=stem, probe=probe, drilling=src_name == "board_drill.ngc",
+                              approach_mm=recipe.heights.approach_mm)
         text = postprocess.process(src.read_text(encoding="utf-8"), job, p.machine, recipe.probing)
         for issue in validate.check(text, p.machine, recipe, slack):
             issues.append(f"{dst_name}: {issue}")

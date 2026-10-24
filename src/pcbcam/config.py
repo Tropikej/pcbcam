@@ -107,6 +107,15 @@ class Placement(_Strict):
 class Heights(_Strict):
     safe_mm: Positive = 2.0
     tool_change_mm: Positive = 15.0
+    # Rapid down to this height above the copper before each plunge; pcb2gcode
+    # would feed the whole safe height at plunge speed (4 s per plunge at 30 mm/min).
+    approach_mm: NonNegative = 0.5
+
+    @model_validator(mode="after")
+    def _order(self) -> Heights:
+        if not self.approach_mm < self.safe_mm < self.tool_change_mm:
+            raise ValueError("heights must satisfy approach_mm < safe_mm < tool_change_mm")
+        return self
 
 
 class Isolation(_Strict):
