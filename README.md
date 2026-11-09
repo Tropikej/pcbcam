@@ -4,8 +4,11 @@ KiCad project + versioned YAML recipe → checked, machine-ready G-code for PCB
 isolation milling on a **Makera Z1**, using [pcb2gcode](https://github.com/pcb2gcode/pcb2gcode)
 as the CAM engine.
 
-> **Status: v0.1, not yet verified on hardware.** Every generated file says so in
-> its header. Air-cut first, then cut scrap.
+> **Status: v0.1, verified on a Makera Z1 (2026-11-09).** A full double-sided
+> board — front + back isolation, drilling, registration bores and the tabbed
+> outline — cuts and registers through the flip (both faces and the via holes
+> line up). Feeds and speeds are still per-tool starting points, tuned by hand:
+> air-cut first, then cut scrap.
 
 ## What it does
 
@@ -53,7 +56,9 @@ manufacturing-output/
 │   ├── 01_isolation_front.cnc
 │   ├── 02_drill.cnc
 │   ├── 03_milldrill.cnc        holes larger than any drill
-│   └── 04_outline.cnc          with tabs; always run last
+│   ├── 04_outline.cnc          with tabs; always run last
+│   ├── 05_engrave_front.cnc    label text, front (if an engrave layer is set)
+│   └── 06_engrave_back.cnc     label text, back (after the flip)
 ├── preview/*.svg              pcb2gcode toolpath renders
 ├── manifest.json              versions, hashes, tools, hole assignments
 └── work/                      exported Gerbers, millproject, logs, DRC reports
@@ -62,6 +67,70 @@ manufacturing-output/
 Work zero is the **lower-left corner of the stock, on top of the copper**; the
 board outline's lower-left corner sits exactly at `placement.margin_*` from it
 (read from the Edge.Cuts Gerber, independent of the cutter size).
+
+## Fixture footprints: see the stock and the pins in KiCad
+
+A fixture file ([`fixtures/makera_z1_pins.yaml`](fixtures/makera_z1_pins.yaml))
+describes the blank sizes the fixture takes and where its registration pins
+are. pcbcam turns it into KiCad footprints:
+
+```sh
+uv run pcbcam fixture-footprint fixtures/makera_z1_pins.yaml --out kicad/pcbcam-fixtures.pretty
+```
+
+Each footprint (`Stock_100x160_Pins4mm`, ...) is graphics only, on the
+fixture's user layer (`User.10`): the stock outline, the area the board may use,
+the pins with their keep-out circles, the flip axis and work zero. No pads, no
+holes, so nothing reaches the Gerbers or the drill file, and KiCad's DRC has
+nothing to report on it.
+
+The KiCad 10 KiBot template does all of step 1 below with
+`./run_kibot.sh --stackup makera_z1_2l`, places the footprint and installs
+starter `manufacturing/` files. It ships its own copy of the library
+(`kibot_resources/footprints/pcbcam-fixtures.pretty`): copy the regenerated
+footprints there when the fixture changes.
+
+To use it:
+
+1. KiCad: add `kicad/pcbcam-fixtures.pretty` to the footprint libraries
+   (nickname `pcbcam-fixtures`), and add layer `User.10` named `Fixture`
+   (Board Setup > Board Editor Layers). Best done once, in your template.
+2. Place the footprint, lock it, and draw Edge.Cuts inside the dashed area.
+3. Recipe: `fixture: fixture.yaml` (a copy of the fixture file) and the same
+   stock size as the footprint.
+
+Then **the footprint's origin is work zero**: the board is cut where it is
+drawn, and `placement.margin_*` is ignored. The build fails if the footprint is
+missing, rotated, flipped or older than the fixture file, if the stock size
+differs from the recipe, or if the outline comes too close to the stock edge or
+to a pin (pin radius + `pin_clearance_mm`, checked on the outline's bounding
+box).
+
+## Engraved labels
+
+Add text (connector names, a logo) and have a V-bit engrave it, in the same
+build. Draw the labels in KiCad's **default stroke font** on a dedicated layer,
+then point the recipe at it:
+
+```yaml
+engrave:
+  tool: vbit_20_0.2     # any V-bit or end mill in tools.yaml
+  depth_mm: 0.10        # shallow; must be less than the stock thickness
+  front_layer: User.11  # cut as drawn
+  back_layer: User.12   # mirrored about the fixture flip axis; omit to skip
+```
+
+pcbcam exports the layer to DXF (stroke glyphs plot as their pen path, not
+filled outlines), chains the strokes to minimise pen lifts, and traces them at
+`depth_mm`, registered to the copper by the same work offset as every other job.
+`back_layer` is mirrored left-right (about the flip axis) like the back
+isolation will be, so **tick the text's "Mirrored" box** in KiCad for back
+labels: KiCad doesn't auto-mirror a plain user layer the way it does B.SilkS,
+and that one tick cancels pcbcam's mirror so the letters read correctly when you
+look straight at the finished back face (the text looks backwards in the editor —
+that's right). Run `06_engrave_back.cnc` after the flip (it needs a fixture, for
+the axis). Keep text **≥ ~2 mm tall** and short — a 0.2 mm V-bit can't resolve
+fine print.
 
 ## Usage
 
@@ -88,10 +157,10 @@ Environment:
 
 ## Not done yet
 
-* Double-sided boards (back isolation, mirroring, registration pins).
 * Slots / oval holes (reported as errors).
-* Verification on a real Z1: tool-change behaviour in Makera Studio, `G32`
-  probing tool and whether compensation survives an imported file.
+* `G32` height-map probing is experimental and still unverified: which tool the
+  Z1 probes with, and whether Makera Studio keeps the compensation for an
+  imported file. The verified flow uses Studio's own 5x5 auto-leveling instead.
 
 ## Tests
 

@@ -17,9 +17,13 @@
 #   * T<n>M6 tool change + tool length measurement, S M3, G54, G4 P<s>
 #   * Studio's 5x5 auto-leveling applies to an imported pcbcam file
 #   * 0.08 mm deep isolation with a 20 deg / 0.2 mm V-bit at 60 / 10 mm/min
-# Still unchecked: drilling, milled holes, outline with tabs, multi-tool files.
+# Verified 2026-11-09: a full double-sided board ran on the Z1 -- front + back
+# isolation, drilling, milled/registration bores and the tabbed outline, a
+# multi-tool flip on the pin fixture. Post-processor output and geometry are
+# trusted on hardware. (Feeds/speeds in tools.yaml are still per-tool starting
+# points, tuned by hand; that is separate from the profile being verified.)
 name: Makera Z1
-verified: false  # true once drilling and outline have run too
+verified: true
 notes: >
   Auto-leveling via G32 is experimental: it is unconfirmed which tool the Z1 probes
   with and whether Makera Studio keeps the compensation for an imported file.
