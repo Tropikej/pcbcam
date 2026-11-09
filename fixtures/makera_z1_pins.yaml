@@ -1,0 +1,51 @@
+# Registration-pin fixture on the Makera Z1, for double-sided boards.
+#
+# Stock frame: X right, Y up, mm, with the stock pushed into the baseplate's
+# corner square (stock lower-left corner = stock-frame 0,0). The board flips
+# about the stock's centre line (flip: left_right = about X = size_x / 2), so
+# the flipped blank lands in the same place. The pins must be mirror pairs about
+# that line (a pin on the line is its own pair): after the flip each pin goes
+# into its partner's hole.
+#
+# work_origin = lower_left_pin: g-code X0 Y0 is the lower-left pin, NOT the stock
+# corner. On a permanent metal baseplate the pin pattern never moves, so probe
+# the lower-left pin's centre ONCE (XY), store it, and reuse it for every board
+# and both sides; only Z is re-probed on the copper of each blank/side. The one
+# exception is the blank's own pin holes: pcbcam emits them as 00_register in the
+# stock-corner frame, because when they are cut the blank has no pins yet -- so
+# that single job is zeroed on the fresh blank's lower-left CORNER (a corner
+# square), then every other job is zeroed on the lower-left pin.
+#
+# Design (2026-11-03): dedicated metal baseplate screwed to the Z1 bed, carrying
+# the corner square and FOUR 4 mm steel dowel pins in the top and bottom
+# sacrificial strips. Mirror pairs about the X = 50 flip axis (20<->80).
+# Y = 8 / 152 (not 5/155): a 4 mm pin at Y=5 would leave only ~1 mm of stock to
+# the edge; Y=8 gives a ~6 mm wall. Full stock width stays usable; boards must
+# clear the pins by pin_clearance.
+# Verified 2026-11-09: a double-sided board was cut on the (MDF) pin fixture and
+# the two faces plus the via holes line up after the flip. Pin positions proven.
+# Build: press the dowels into the baseplate (holes slightly under 4 mm); bore
+# each blank's 4 pin holes with 00_register (slightly over 4 mm, slip fit) so
+# they drop over the pins.
+#
+#   pcbcam fixture-footprint fixtures/makera_z1_pins.yaml --out kicad/pcbcam-fixtures.pretty
+name: makera_z1_pins
+verified: true          # 2026-11-09: double-sided flip proven, faces + vias line up
+layer: User.10          # add it in KiCad: Board Setup > Board Editor Layers, name it "Fixture"
+work_origin: lower_left_pin   # g-code X0 Y0 = lower-left pin (probe it once); corner only for 00_register
+pin_diameter_mm: 4
+pin_clearance_mm: 3     # pin edge to board outline; at least the outline cutter (2 mm)
+edge_margin_mm: 3       # stock edge to board outline
+# Ø4.0 bored with the 2 mm single flute came out undersize (pins 3.94 wouldn't
+# enter); Ø4.1 slip-fit cleanly. Keep 0.1 so fresh blanks bore to size first try.
+blank_bore_clearance_mm: 0.1  # bore = 4.0 + 0.1 = 4.1 mm
+# 00_register work zero: "stock_corner" (default, fresh blank: zero its lower-left
+# corner) or "lower_left_pin" (re-boring: zero the probed lower-left hole centre).
+register_origin: stock_corner
+
+stocks:
+  100x160:              # Eurocard blank, 100 mm along X
+    size_x_mm: 100
+    size_y_mm: 160
+    flip: left_right
+    pins_mm: [[20, 8], [80, 8], [20, 152], [80, 152]]
