@@ -4,10 +4,18 @@ version = "0.1.0"
 description = "KiCad -> pcb2gcode -> Makera Z1 G-code, driven by versioned YAML recipes"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Tropikej" }]
+keywords = ["kicad", "pcb", "cnc", "gcode", "pcb2gcode", "makera", "isolation-milling"]
 dependencies = [
     "pydantic>=2.10",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Tropikej/pcbcam"
+Repository = "https://github.com/Tropikej/pcbcam"
 
 [project.scripts]
 pcbcam = "pcbcam.cli:main"
