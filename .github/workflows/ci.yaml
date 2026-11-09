@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Unit tests: fast, no external tools. The source of truth for the code.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Unit tests
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          uv run pytest -q
+
+  # Integration gate: export + DRC + hole checks on the bundled calibration
+  # board. Needs kicad-cli (KiCad 10 files) but NOT the pcb2gcode Docker image,
+  # because `check` stops before CAM. Runs inside KiCad's official image.
+  #
+  # The image tag is the only thing not verifiable without a runner: it must be a
+  # published KiCad >= 10 tag that ships kicad-cli (https://www.kicad.org/download/docker/).
+  # Bump it to the exact 10.x your example files were saved with if this job can't
+  # load them, and add `xvfb-run` before the command if kicad-cli needs a display.
+  check:
+    runs-on: ubuntu-latest
+    container:
+      image: kicad/kicad:10.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: pcbcam check (calibration board)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          kicad-cli version
+          uv run pcbcam check examples/cnc-pcb-calibration-project
