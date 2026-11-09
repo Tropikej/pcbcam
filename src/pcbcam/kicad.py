@@ -90,6 +90,22 @@ def export(cli: str, board: Path, out: Path) -> Exports:
     return Exports(drill=drill if drill.is_file() else None, **layers)
 
 
+def export_dxf(cli: str, board: Path, layer: str, out_file: Path) -> Path:
+    """Plot one layer to a DXF, mm, stroke text as line/arc centrelines.
+
+    No ``--use-contours``: stroke-font glyphs come out as their pen path, which
+    is what a V-bit traces. The plot shares the Gerber coordinate frame.
+    """
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    _run([
+        cli, "pcb", "export", "dxf", "--layers", layer, "--output-units", "mm",
+        "--exclude-refdes", "--exclude-value", "--mode-single", "-o", str(out_file), str(board),
+    ])
+    if not out_file.is_file():
+        raise KiCadError(f"exporting {layer} to DXF produced no file at {out_file}")
+    return out_file
+
+
 def machine_rules(recipe: Recipe, resolved: Resolved) -> str:
     """Custom DRC rules describing what the CNC can physically make.
 
@@ -99,6 +115,7 @@ def machine_rules(recipe: Recipe, resolved: Resolved) -> str:
     """
     c = recipe.checks
     gap = resolved.isolation_width_mm + c.clearance_margin_mm
+    edge = gap if c.edge_gap_mm is None else c.edge_gap_mm
     rules = [
         "(version 1)",
         f'(rule "{RULE_PREFIX}_isolation_gap"\n  (layer outer)\n'
@@ -109,8 +126,9 @@ def machine_rules(recipe: Recipe, resolved: Resolved) -> str:
         f"  (constraint annular_width (min {c.min_annular_ring_mm:.4f}mm)))",
         f'(rule "{RULE_PREFIX}_hole_to_hole"\n'
         f"  (constraint hole_to_hole (min {c.min_hole_to_hole_mm:.4f}mm)))",
-        f'(rule "{RULE_PREFIX}_edge_gap"\n'
-        f"  (constraint edge_clearance (min {gap:.4f}mm)))",
+        # checks.edge_gap_mm: 0 = copper may reach the outline (no rule at all)
+        *([f'(rule "{RULE_PREFIX}_edge_gap"\n'
+           f"  (constraint edge_clearance (min {edge:.4f}mm)))"] if edge > 0 else []),
         # Last = highest priority. Test patterns that probe the limits on
         # purpose live in rule areas with this name; only real layout errors
         # (overlaps, sub-0.09 mm features) are still reported there.

@@ -55,6 +55,7 @@ class Resolved:
     drills: list[ResolvedTool]
     milldrill: ResolvedTool | None
     outline: ResolvedTool | None
+    engrave: ResolvedTool | None = None
 
     @property
     def isolation_width_mm(self) -> float:
@@ -62,7 +63,7 @@ class Resolved:
         return self.isolation[-1].width_mm
 
     def all(self) -> list[ResolvedTool]:
-        items = [*self.isolation, *self.drills, self.milldrill, self.outline]
+        items = [*self.isolation, *self.drills, self.milldrill, self.outline, self.engrave]
         return [t for t in items if t is not None]
 
 
@@ -108,7 +109,13 @@ def resolve(recipe: Recipe, lib: ToolLibrary) -> Resolved:
         t = _get(lib, o.tool, (EndMill,), "outline.tool")
         outline = ResolvedTool(o.tool, t, t.diameter_mm)
 
-    return Resolved(iso, drills, milldrill, outline)
+    engrave = None
+    e = recipe.engrave
+    if e and e.enabled:
+        t = _get(lib, e.tool, (VBit, EndMill), "engrave.tool")
+        engrave = ResolvedTool(e.tool, t, cutting_width(t, e.depth_mm))
+
+    return Resolved(iso, drills, milldrill, outline, engrave)
 
 
 @dataclass(frozen=True)

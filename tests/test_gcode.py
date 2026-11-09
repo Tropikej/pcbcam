@@ -86,6 +86,15 @@ def test_validate_catches_problems(recipe, z1):
     assert any("G64 is not in" in m for m in msgs)
 
 
+def test_validate_bounds_follow_the_work_origin(recipe, z1):
+    # Board feature 10 mm left of the pin: X-10 is off the stock from the corner,
+    # but on the stock when work zero is the lower-left pin at (20, 8).
+    gc = "G21\nG90\nM3 S12000\nG1 X-10 Y-3 F100\nM5\n"
+    corner = [i.message for i in validate.check(gc, z1, recipe, 0.5)]
+    assert any("X-10" in m for m in corner) and any("Y-3" in m for m in corner)
+    assert validate.check(gc, z1, recipe, 0.5, origin_mm=(20.0, 8.0)) == []
+
+
 def test_excellon_parse(tmp_path):
     drl = tmp_path / "b.drl"
     drl.write_text(
@@ -101,7 +110,7 @@ def test_millproject(recipe, tools):
     res = resolve(recipe, tools)
     holes = assign_holes({0.8: 3, 3.2: 1}, res, 0.05)
     text = millproject.render(recipe, res, holes, {"front": "f.gbr", "outline": "o.gbr", "drill": "d.drl"},
-                              (130.0, -128.0))
+                              (-125.0, 133.0))
     opts = dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
     assert opts["mill-diameters"] == "0.1429mm"
     assert opts["zwork"] == "-0.08"
@@ -109,8 +118,8 @@ def test_millproject(recipe, tools):
     assert opts["milldrill-diameter"] == "1mm"
     assert opts["zbridges"] == "-1.1"  # 1.6 stock - 0.5 tab
     assert opts["zero-start"] == "false"
-    assert opts["x-offset"] == "-125"  # 5 mm margin - 130 mm KiCad X
-    assert opts["y-offset"] == "133"   # 5 mm margin + 128 mm (Gerber Y is up)
+    assert opts["x-offset"] == "-125"
+    assert opts["y-offset"] == "133"
 
 
 def test_outline_bbox_with_rounded_corners(tmp_path):

@@ -75,3 +75,15 @@ def test_hole_assignment(recipe, tools):
 def test_examples_load():
     recipe = load_recipe(EXAMPLES / "recipe.yaml")
     resolve(recipe, load_tools(EXAMPLES / recipe.tools))
+
+
+def test_edge_gap_rule(recipe_data, tools):
+    from pcbcam.kicad import machine_rules
+    default = machine_rules(Recipe.model_validate(recipe_data), resolve(Recipe.model_validate(recipe_data), tools))
+    assert "pcbcam_edge_gap" in default
+    recipe_data["checks"] = {"edge_gap_mm": 0}
+    r = Recipe.model_validate(recipe_data)
+    assert "pcbcam_edge_gap" not in machine_rules(r, resolve(r, tools))
+    recipe_data["checks"] = {"edge_gap_mm": 0.5}
+    r = Recipe.model_validate(recipe_data)
+    assert "edge_clearance (min 0.5000mm)" in machine_rules(r, resolve(r, tools))

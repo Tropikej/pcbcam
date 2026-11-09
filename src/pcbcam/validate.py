@@ -36,14 +36,21 @@ def _comment_problem(line: str) -> str | None:
     return "unclosed '(' comment" if depth else None
 
 
-def check(gcode: str, profile: MachineProfile, recipe: Recipe, xy_slack_mm: float) -> list[Issue]:
-    """``xy_slack_mm`` allows tool paths outside the stock by this much (cutter radius)."""
+def check(gcode: str, profile: MachineProfile, recipe: Recipe, xy_slack_mm: float,
+          origin_mm: tuple[float, float] = (0.0, 0.0)) -> list[Issue]:
+    """``xy_slack_mm`` allows tool paths outside the stock by this much (cutter radius).
+
+    ``origin_mm`` is where work zero sits in the stock-corner frame (the lower-left
+    pin, or (0, 0)): the stock then spans ``[-origin, size - origin]`` in work
+    coordinates, so a pin origin legitimately puts board features at negative X/Y.
+    """
     allowed = {w.upper() for w in profile.allowed_words}
     issues: list[Issue] = []
     metric = absolute = spindle = False
     z_floor = -(recipe.stock.thickness_mm + 0.5)  # at most 0.5 mm into the spoilboard
-    max_x = recipe.stock.size_x_mm + xy_slack_mm
-    max_y = recipe.stock.size_y_mm + xy_slack_mm
+    ox, oy = origin_mm
+    min_x, max_x = -ox - xy_slack_mm, recipe.stock.size_x_mm - ox + xy_slack_mm
+    min_y, max_y = -oy - xy_slack_mm, recipe.stock.size_y_mm - oy + xy_slack_mm
     z = None
 
     for n, raw in enumerate(gcode.splitlines(), start=1):
@@ -92,8 +99,8 @@ def check(gcode: str, profile: MachineProfile, recipe: Recipe, xy_slack_mm: floa
         if z is not None and z < 0 and not spindle:
             issues.append(Issue(n, "cutting below Z0 with the spindle off"))
         x, y = coords.get("X"), coords.get("Y")
-        if x is not None and not -xy_slack_mm <= x <= max_x:
-            issues.append(Issue(n, f"X{x} is outside the stock (0..{recipe.stock.size_x_mm})"))
-        if y is not None and not -xy_slack_mm <= y <= max_y:
-            issues.append(Issue(n, f"Y{y} is outside the stock (0..{recipe.stock.size_y_mm})"))
+        if x is not None and not min_x <= x <= max_x:
+            issues.append(Issue(n, f"X{x} is outside the stock ({-ox:.1f}..{recipe.stock.size_x_mm - ox:.1f})"))
+        if y is not None and not min_y <= y <= max_y:
+            issues.append(Issue(n, f"Y{y} is outside the stock ({-oy:.1f}..{recipe.stock.size_y_mm - oy:.1f})"))
     return issues

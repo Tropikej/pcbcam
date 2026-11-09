@@ -1,4 +1,4 @@
-"""Command line: ``pcbcam build|check|tools``."""
+"""Command line: ``pcbcam build|check|tools|crop|fixture-footprint``."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, build, crop, kicad, validate
-from .config import ConfigError
+from . import __version__, build, crop, fixture, kicad, validate
+from .config import ConfigError, load_fixture
 from .pcb2gcode import Pcb2GcodeError
 from .postprocess import PostProcessError
 
@@ -55,7 +55,14 @@ def _crop(p: build.Plan, out: Path, job: str, box_args: list[str]) -> int:
     res = crop.crop(src.read_text(encoding="ascii"), boxes, p.recipe.heights.safe_mm, eol,
                     approach_z=p.recipe.heights.approach_mm)
     slack = max(t.width_mm for t in p.resolved.all()) / 2 + 0.01
-    issues = validate.check(res.text, p.machine, p.recipe, slack)
+    # 00_register uses its own register origin (corner or lower-left hole); every
+    # other job uses the main work origin.
+    if job.startswith("00_register"):
+        stock = build._fixture_stock(p)
+        origin = p.fixture.register_shift(stock) if (p.fixture and stock) else (0.0, 0.0)
+    else:
+        origin = build.work_origin_shift(p)
+    issues = validate.check(res.text, p.machine, p.recipe, slack, origin)
     if issues:
         print(f"FAILED: {len(issues)} problem(s) in the cropped job", file=sys.stderr)
         for i in issues[:20]:
@@ -94,7 +101,22 @@ def main(argv: list[str] | None = None) -> int:
     cp.add_argument("--job", default="01_isolation_front", help="job to crop (default: %(default)s)")
     cp.add_argument("--box", action="append", required=True, metavar="X0,Y0,X1,Y1",
                     help="rectangle to keep, work coordinates in mm; repeat for several")
+    fp = sub.add_parser("fixture-footprint", help="write the KiCad footprints of a fixture file")
+    fp.add_argument("fixture", help="fixture YAML file")
+    fp.add_argument("--out", required=True, help=f"footprint library folder, e.g. {fixture.LIBRARY}.pretty")
     args = ap.parse_args(argv)
+
+    if args.cmd == "fixture-footprint":
+        try:
+            fix = load_fixture(Path(args.fixture))
+        except ConfigError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        for path in fixture.write_library(fix, Path(args.out)):
+            print(f"wrote {path}")
+        if not fix.verified:
+            print(f"warning: fixture '{fix.name}' is not verified: pin positions are provisional")
+        return 0
 
     try:
         project, recipe, out = _paths(args)
