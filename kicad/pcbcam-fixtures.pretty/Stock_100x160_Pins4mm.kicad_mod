@@ -300,7 +300,7 @@
 			(justify left)
 		)
 	)
-	(fp_text user "makera_z1_pins: stock 100 x 160 mm, pins 4 mm (UNVERIFIED pin positions)"
+	(fp_text user "makera_z1_pins: stock 100 x 160 mm, pins 4 mm"
 		(at 0 5 0)
 		(layer "User.10")
 		(effects
