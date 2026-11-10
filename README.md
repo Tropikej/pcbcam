@@ -168,3 +168,17 @@ Environment:
 uv run pytest            # unit tests
 uv run pytest -m integration   # needs kicad-cli + the Docker image
 ```
+
+## License & credits
+
+pcbcam is released under the [MIT License](LICENSE).
+
+The CAM engine is [**pcb2gcode**](https://github.com/pcb2gcode/pcb2gcode) — a
+separate program, **licensed GPLv3**, that pcbcam invokes at arm's length (a
+subprocess / the pinned Docker image). pcbcam contains none of its code, so
+pcbcam's own MIT license is unaffected. `docker/pcb2gcode/Dockerfile` builds
+pcb2gcode from a pinned upstream tag; if you distribute that built image it
+carries pcb2gcode's GPLv3 (make the corresponding source available). Many thanks
+to the pcb2gcode authors — pcbcam would not exist without it.
+
+Export and design-rule checks use [KiCad](https://www.kicad.org/)'s `kicad-cli`.
