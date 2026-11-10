@@ -20,22 +20,26 @@ jobs:
 
   # Integration gate: export + DRC + hole checks on the bundled calibration
   # board. Needs kicad-cli (KiCad 10 files) but NOT the pcb2gcode Docker image,
-  # because `check` stops before CAM. Runs inside KiCad's official image.
+  # because `check` stops before CAM.
   #
-  # The image tag is the only thing not verifiable without a runner: it must be a
-  # published KiCad >= 10 tag that ships kicad-cli (https://www.kicad.org/download/docker/).
-  # Bump it to the exact 10.x your example files were saved with if this job can't
-  # load them, and add `xvfb-run` before the command if kicad-cli needs a display.
+  # Checkout runs on the host, then the check runs via `docker run` in KiCad's
+  # official image: a job-level `container:` with that image fails checkout
+  # (its non-root USER can't write the runner's _temp files). The container runs
+  # as root so it can write the mounted workspace; output goes to /tmp so nothing
+  # root-owned is left behind. Bump the kicad/kicad tag if it can't load the KiCad
+  # 10 files, and add `xvfb-run` before kicad-cli if it needs a display.
   check:
     runs-on: ubuntu-latest
-    container:
-      image: kicad/kicad:10.0
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: pcbcam check (calibration board)
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          kicad-cli version
-          uv run pcbcam check examples/cnc-pcb-calibration-project
+          docker run --rm --user root -v "$PWD:/w" -w /w kicad/kicad:10.0 bash -c '
+            set -e
+            export HOME=/root
+            command -v curl >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq curl; }
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            export PATH="$HOME/.local/bin:$PATH"
+            kicad-cli version
+            uv run pcbcam check examples/cnc-pcb-calibration-project --out /tmp/pcbcam-out
+          '
