@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - name: Unit tests
@@ -31,7 +31,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: pcbcam check (calibration board)
         run: |
           docker run --rm --user root -v "$PWD:/w" -w /w kicad/kicad:10.0 bash -c '
