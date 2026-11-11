@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import (__version__, backside, engrave, excellon, fixture, gerber, kicad, millproject, postprocess,
-               register, validate)
+from . import (__version__, backside, engrave, eta, excellon, fixture, gerber, kicad, millproject,
+               postprocess, register, validate)
 from .config import (ConfigError, Fixture, FixtureStock, MachineProfile, Recipe, load_fixture, load_machine,
                      load_recipe, load_tools)
 from .pcb2gcode import Pcb2GcodeError, Runner
@@ -44,6 +44,11 @@ class Result:
     warnings: list[str] = field(default_factory=list)
     board_size: tuple[float, float] | None = None
     origin: str = ""  # how the board was placed on the stock, for the manifest
+    estimates: dict[str, eta.Estimate] = field(default_factory=dict)  # job file name -> run-time estimate
+
+    def timings(self) -> list[tuple[str, eta.Estimate]]:
+        """Per-job estimates in the order the jobs run (00_register first)."""
+        return [(j.name, self.estimates[j.name]) for j in self.jobs if j.name in self.estimates]
 
 
 def find_board(project: Path) -> Path:
@@ -247,6 +252,7 @@ def run(
         dst = gcode_dir / dst_name
         dst.write_bytes(text.encode("ascii"))  # line endings come from the profile
         result.jobs.append(dst)
+        result.estimates[dst_name] = eta.estimate(text, p.machine)
 
     # 4b. Back copper isolation: a second pcb2gcode run on B.Cu, mirrored about
     # the fixture flip axis (so it registers after the physical flip).
@@ -324,6 +330,7 @@ def _back_isolation(p: Plan, placement: Placement, back_gbr: Path, work: Path, r
     dst = gcode_dir / dst_name
     dst.write_bytes(text.encode("ascii"))
     result.jobs.append(dst)
+    result.estimates[dst_name] = eta.estimate(text, p.machine)
     for svg in sub.glob("*.svg"):
         (result.out / "preview").mkdir(exist_ok=True)
         shutil.copy2(svg, result.out / "preview" / f"back_{svg.name}")
@@ -371,6 +378,7 @@ def _engrave(p: Plan, cli: str, placement: Placement, work: Path, gcode_dir: Pat
         dst = gcode_dir / dst_name
         dst.write_bytes(text.encode("ascii"))
         result.jobs.append(dst)
+        result.estimates[dst_name] = eta.estimate(text, p.machine)
     return issues
 
 
@@ -415,7 +423,33 @@ def _register(p: Plan, gcode_dir: Path, result: Result, slack: float) -> list[st
     dst = gcode_dir / dst_name
     dst.write_bytes(text.encode("ascii"))
     result.jobs.insert(0, dst)  # it is machined before everything else
+    result.estimates[dst_name] = eta.estimate(text, p.machine)
     return issues
+
+
+def _job_entry(job: Path, est: eta.Estimate | None) -> dict:
+    entry = {"file": job.name, "sha256": _sha256(job)}
+    if est is not None:
+        entry["est_seconds"] = round(est.total_s)
+        entry["est_time"] = eta.human_time(est.total_s)
+        entry["tool_changes"] = est.tool_changes
+    return entry
+
+
+def _estimate_block(p: Plan, result: Result) -> dict:
+    total = sum((e for _, e in result.timings()), eta.Estimate())
+    return {
+        "total_seconds": round(total.total_s),
+        "total_time": eta.human_time(total.total_s),
+        "cutting_seconds": round(total.cutting_s),
+        "plunge_seconds": round(total.plunge_s),
+        "rapid_seconds": round(total.rapid_s),
+        "dwell_seconds": round(total.dwell_s),
+        "tool_change_seconds": round(total.tool_change_s),
+        "tool_changes": total.tool_changes,
+        "rapid_mm_min": p.machine.rapid_mm_min,
+        "note": "machine motion only; manual tool-bit swaps are not counted",
+    }
 
 
 def _manifest(p: Plan, result: Result, holes: list[HoleAssignment], cli: str, runner: Runner, log: str) -> None:
@@ -440,7 +474,8 @@ def _manifest(p: Plan, result: Result, holes: list[HoleAssignment], cli: str, ru
              "tool": h.tool.name if h.tool else None}
             for h in holes
         ],
-        "jobs": [{"file": j.name, "sha256": _sha256(j)} for j in result.jobs],
+        "jobs": [_job_entry(j, result.estimates.get(j.name)) for j in result.jobs],
+        "estimate": _estimate_block(p, result),
         "warnings": result.warnings,
     }
     (result.out / "manifest.json").write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -59,3 +59,8 @@ drop_words: [M0, M9, G64, G91.1, G80]
 allowed_words: [G0, G1, G2, G3, G4, G17, G21, G28, G32, G54, G90, G94, M3, M5, M6, M30, M400, M851, M852]
 max_feed_mm_min: 3000
 max_rpm: 15000  # verify against your spindle's rating
+rapid_mm_min: 1200  # published max travel speed (Makera Z1; the Z1 Pro is 2000)
+# Automatic tool-length probe cycle after a manual bit swap, for the run-time
+# estimate only. A starting estimate -- time one probe on your Z1 and adjust.
+# The operator's bit swap is not counted (the estimate reports the change count).
+tool_change_s: 15

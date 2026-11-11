@@ -356,6 +356,14 @@ class MachineProfile(_Strict):
     allowed_words: list[str]  # anything else fails validation
     max_feed_mm_min: Positive
     max_rpm: Positive
+    # Rapid traverse rate (G0) used only for the run-time estimate. The Makera
+    # Z1's published max travel speed is 1200 mm/min (Z1 Pro 2000). It does not
+    # gate anything; set it to your machine's rapid so the ETA is realistic.
+    rapid_mm_min: Positive = 1000.0
+    # Machine time the estimate adds per tool change (T..M6): the automatic
+    # tool-length probe cycle. The manual bit swap is NOT included (it is
+    # operator-dependent); the estimate reports the tool-change count separately.
+    tool_change_s: NonNegative = 0.0
 
 
 # --- loading ---------------------------------------------------------------

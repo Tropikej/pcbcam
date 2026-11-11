@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
-from . import __version__, build, crop, fixture, kicad, validate
+from . import __version__, build, crop, eta, fixture, kicad, validate
 from .config import ConfigError, load_fixture
 from .pcb2gcode import Pcb2GcodeError
 from .postprocess import PostProcessError
@@ -149,7 +150,24 @@ def main(argv: list[str] | None = None) -> int:
         for job in result.jobs:
             print(f"wrote {job}")
         print(f"manifest: {result.out / 'manifest.json'}")
+        timings = result.timings()
+        if timings:
+            print()
+            print(eta.format_report(timings))
+            _write_step_summary(p, result, timings)
     return 0
+
+
+def _write_step_summary(p: build.Plan, result: build.Result, timings) -> None:
+    """Append the run-time estimate to the GitHub Actions job summary, if running in CI."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(eta.github_summary(p.board.stem, timings, p.machine))
+    except OSError as exc:  # a CI quirk must never fail the build
+        print(f"warning: could not write GITHUB_STEP_SUMMARY: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

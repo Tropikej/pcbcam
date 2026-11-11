@@ -60,9 +60,18 @@ manufacturing-output/
 │   ├── 05_engrave_front.cnc    label text, front (if an engrave layer is set)
 │   └── 06_engrave_back.cnc     label text, back (after the flip)
 ├── preview/*.svg              pcb2gcode toolpath renders
-├── manifest.json              versions, hashes, tools, hole assignments
+├── manifest.json              versions, hashes, tools, hole assignments, run-time estimate
 └── work/                      exported Gerbers, millproject, logs, DRC reports
 ```
+
+`pcbcam build` also prints an **estimated run time** per job and a total, and
+records it in `manifest.json` (`jobs[].est_time` and the `estimate` block). It is
+machine-motion time only — feed moves at their feed rate, rapids at the profile's
+`rapid_mm_min` (1200 mm/min on the Z1), plunges, and `G4` dwells (spindle
+spin-up included) — plus the automatic tool-length probe per tool change. The
+**manual bit swap is not counted** (it is operator-dependent); the tool-change
+count is reported so you can add your own allowance. Under GitHub Actions the
+estimate is also appended to the job summary (`$GITHUB_STEP_SUMMARY`).
 
 Work zero is the **lower-left corner of the stock, on top of the copper**; the
 board outline's lower-left corner sits exactly at `placement.margin_*` from it
