@@ -30,6 +30,12 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/pcbcam"]
 
+[tool.ruff]
+# The example sub-projects carry a vendored KiCad/KiBot toolchain of their own.
+# kibot_resources/ comes from the template master and is regenerated, so it is
+# not pcbcam source -- don't lint it (hand-fixes there revert on the next regen).
+extend-exclude = ["examples/**/kibot_resources"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
