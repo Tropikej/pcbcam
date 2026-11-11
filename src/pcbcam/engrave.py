@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from pathlib import Path
 
 from .config import FixtureStock
+from .tooling import ResolvedTool
 
 # Arcs and circles are flattened to straight segments no farther than this from
 # the true curve; well below the V-bit groove width, so invisible on the board.

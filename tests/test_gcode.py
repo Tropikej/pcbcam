@@ -184,7 +184,7 @@ def test_drill_feeds_per_tool(recipe, tools, z1):
     assert "T3M6" in lines and "S11000 M3" in lines  # d10: number 3, 11000 rpm
     assert "G1 F50" in lines                         # d10 plunge, not the global F20
     assert "G0 Z2" in lines and "G1 Z2.00000" not in lines
-    assert "(T3 d10: drill 1 mm)" in lines and not any("d08" in l for l in lines)
+    assert "(T3 d10: drill 1 mm)" in lines and not any("d08" in line for line in lines)
     assert validate.check(out, z1, recipe, xy_slack_mm=0.5) == []
 
 
